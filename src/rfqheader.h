@@ -1,0 +1,98 @@
+#ifndef RFQHEADER_H
+#define RFQHEADER_H
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string>
+#include <vector>
+#include "common.h"
+#include <iostream>
+#include <fstream>
+
+using namespace std;
+
+/*
+* the query name of FASTQ is usually like
+* @A00250:26:H3YTWDSXX:1:1101:16776:17989 1:N:0:ACTGTTCC
+* can be divided into 
+* <QNAME> = <NAME1>:<LANE>:<TILE>:<X>:<Y><NAME2>
+* <NAME1> = @A00250:26:H3YTWDSXX:
+* <NAME2> =  1:N:0:ACTGTTCC
+*/
+
+// if set, the query name has lane
+#define BIT_HAS_LANE (1<<0)
+// if set, the query name has tile
+#define BIT_HAS_TILE (1<<1)
+// if set, the query name has X
+#define BIT_HAS_X (1<<2)
+// if set, the query name has Y
+#define BIT_HAS_Y (1<<3)
+// if set, the query name has NAME2
+#define BIT_HAS_NAME2 (1<<4)
+// if set, the data is paired end
+#define BIT_PAIRED_END (1<<5)
+// if set, the encoded stream has line break in the file end
+#define BIT_HAS_LINE_BREAK_AT_END (1<<6)
+// if set, the encoded stream R2 has line break in the file end
+#define BIT_HAS_LINE_BREAK_AT_END_R2 (1<<7)
+// if set, the quality string will not be encoded
+#define BIT_DONT_ENCODE_QUAL (1<<8)
+
+class RfqHeader{
+public:
+    RfqHeader();
+    void read(ifstream& ifs);
+    void write(ofstream& ofs);
+    bool hasLane();
+    bool hasTile();
+    bool hasX();
+    bool hasY();
+    bool hasName2();
+    bool hasLineBreakAtEnd();
+    bool hasLineBreakAtEndR2();
+
+    char qual2bit(char qual);
+    char bit2qual(char qual);
+    char majorQual();
+    char nBaseQual();
+    char nBaseBit();
+    int majorQualNumBits();
+    int normalQualNumBits();
+
+    bool supportInterleaved();
+
+    void makeQualityTable(string& qualStr);
+
+private:
+    void makeQualBitTable();
+    void computeNormalQualBits();
+
+public:
+    // the flag should be "repaq"
+    char mRepaqFlag[3];
+    // to support backward compatibility
+    char mAlgorithmVersion;
+    uint8 mReadLengthBytes;
+    uint16 mFlags;
+
+    /*
+    * PE processing
+    * if mSupportInterleaved == true, the chunk can be in BIT_PE_INTERLEAVED mode
+    * read2name2 = read1name2;
+    * read2name2[mName2DiffPos] = mName2DiffChar;
+    */
+    bool mSupportInterleaved;
+    uint8 mName2DiffPos;
+    char mName2DiffChar;
+
+    // quality table
+    uint8 mQualBins;
+    uint8* mQualBuf;
+    char mQual2BitTable[256];
+    char mBit2QualTable[256];
+    int mNormalQualNumBits;
+
+};
+
+#endif
