@@ -17,6 +17,7 @@ using namespace std;
 class RfqCodec{
 public:
     RfqCodec();
+    ~RfqCodec();
     void setHeader(RfqHeader* header);
     RfqHeader* makeHeader(vector<Read*>& reads);
     RfqHeader* makeHeader(vector<ReadPair*>& pairs);

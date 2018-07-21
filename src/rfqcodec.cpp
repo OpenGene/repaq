@@ -9,6 +9,8 @@ RfqCodec::RfqCodec(){
     mHeader = NULL;
 }
 
+RfqCodec::~RfqCodec(){
+}
 
 void RfqCodec::setHeader(RfqHeader* header) {
     mHeader = header;
@@ -366,9 +368,9 @@ RfqChunk* RfqCodec::encodeChunk(vector<Read*>& reads, bool isPE) {
 
     uint32 encodedQualBufLen = encodeSeqQual(seqBufOriginal, qualBufOriginal, seqBufEncoded, qualBufEncoded, totalReadLen);
 
-    delete seqBufOriginal;
+    delete[] seqBufOriginal;
     seqBufOriginal = NULL;
-    delete qualBufOriginal;
+    delete[] qualBufOriginal;
     qualBufOriginal = NULL;
 
     RfqChunk* chunk = new RfqChunk(mHeader);
@@ -490,7 +492,7 @@ RfqChunk* RfqCodec::encodeChunk(vector<Read*>& reads, bool isPE) {
 
     chunk->mQualBuf = new uint8[encodedQualBufLen];
     memcpy(chunk->mQualBuf, qualBufEncoded, encodedQualBufLen);
-    delete qualBufEncoded;
+    delete[] qualBufEncoded;
     qualBufEncoded = NULL;
 
     chunk->calcTotalBufSize();
