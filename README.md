@@ -5,6 +5,27 @@ For NovaSeq data, the .rfq file can be much smaller than .fq.gz, and the compres
 
 The biggest advantage is that the .rfq file can be further compressed with xz, which is based on LZMA algorithm. The .rfq.xz file can be as small as 5% of the original FASTQ file, or smaller than 30% of the .fq.gz file. Note that usually the gz files are not compressible by xz.
 
+# Get repaq
+## download binary 
+This binary is only for Linux systems: http://opengene.org/repaq/repaq
+```shell
+# this binary was compiled on CentOS, and tested on CentOS/Ubuntu
+wget http://opengene.org/repaq/repaq
+chmod a+x ./repaq
+```
+## or compile from source
+```shell
+# get source (you can also use browser to download from master or releases)
+git clone https://github.com/OpenGene/repaq.git
+
+# build
+cd repaq
+make
+
+# Install
+sudo make install
+```
+
 # usage
 For single-end mode:
 ```shell
