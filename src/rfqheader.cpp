@@ -1,6 +1,7 @@
 #include "rfqheader.h"
 #include <time.h>
 #include "util.h"
+#include <memory.h>
 
 RfqHeader::RfqHeader(){
     memset(this, 0, sizeof(RfqHeader));
