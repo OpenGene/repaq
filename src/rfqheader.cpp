@@ -61,16 +61,15 @@ void RfqHeader::makeQualBitTable() {
 
 void RfqHeader::computeNormalQualBits() {
     // except the major qual
-    int normalQualBins = mQualBins - 1;
-    if(normalQualBins>=64) normalQualBins = 7;
-    else if(normalQualBins>=32) normalQualBins = 6;
-    else if(normalQualBins>=16) normalQualBins = 5;
-    else if(normalQualBins>=8) normalQualBins = 4;
-    else if(normalQualBins>=4) normalQualBins = 3;
-    else if(normalQualBins>=2) normalQualBins = 2;
-    else normalQualBins = 1;
-
-    mNormalQualNumBits = 8 - normalQualBins - 1;
+    // 0, 1, 3, 5, 7, 9...
+    int maxQualVal = max(1, mQualBins*2 - 3);
+    if(maxQualVal>=64) mNormalQualNumBits = 1;
+    else if(maxQualVal>=32) mNormalQualNumBits = 2;
+    else if(maxQualVal>=16) mNormalQualNumBits = 3;
+    else if(maxQualVal>=8) mNormalQualNumBits = 4;
+    else if(maxQualVal>=4) mNormalQualNumBits = 5;
+    else if(maxQualVal>=2) mNormalQualNumBits = 6;
+    else mNormalQualNumBits = 7;
 }
 
 void RfqHeader::makeQualityTable(string& qualStr) {

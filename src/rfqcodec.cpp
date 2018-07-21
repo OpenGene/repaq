@@ -591,7 +591,7 @@ void RfqCodec::decodeSeqQual(RfqChunk* chunk, string& seq, string& qual, uint32 
     char nBaseQual = mHeader->nBaseQual();
     char nBaseBit = mHeader->nBaseBit();
     char nqMask = 0;
-    for(int b=0; b<nqNumBits; b++)
+    for(int b=0; b<(8-nqNumBits); b++)
         nqMask |= (0x01 << b);
     
     uint32 decoded = 0;
