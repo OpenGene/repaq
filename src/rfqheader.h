@@ -92,6 +92,7 @@ public:
     char mQual2BitTable[256];
     char mBit2QualTable[256];
     int mNormalQualNumBits;
+    char mNBaseQual;
 
 };
 

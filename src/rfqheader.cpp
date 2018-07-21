@@ -9,6 +9,7 @@ RfqHeader::RfqHeader(){
     mRepaqFlag[2] = 'Q';
     mAlgorithmVersion = ALGORITHM_VER;
     mReadLengthBytes = 1;
+    mNBaseQual = '#';
 }
 
 void RfqHeader::read(ifstream& ifs) {
@@ -69,7 +70,7 @@ void RfqHeader::computeNormalQualBits() {
     else if(normalQualBins>=2) normalQualBins = 2;
     else normalQualBins = 1;
 
-    mNormalQualNumBits = 8 - normalQualBins - 2;
+    mNormalQualNumBits = 8 - normalQualBins - 1;
 }
 
 void RfqHeader::makeQualityTable(string& qualStr) {
