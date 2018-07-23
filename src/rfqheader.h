@@ -8,6 +8,7 @@
 #include "common.h"
 #include <iostream>
 #include <fstream>
+#include "read.h"
 
 using namespace std;
 
@@ -62,7 +63,8 @@ public:
 
     bool supportInterleaved();
 
-    void makeQualityTable(string& qualStr);
+    void makeQualityTable(vector<Read*>& reads, bool hasLaneTileXY);
+    void setNBaseQual(char qual);
 
 private:
     void makeQualBitTable();

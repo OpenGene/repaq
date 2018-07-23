@@ -42,7 +42,7 @@ RfqHeader* RfqCodec::makeHeader(vector<Read*>& reads) {
         header->mFlags |= BIT_HAS_NAME2;
     }
 
-    header->makeQualityTable(qualStr);
+    header->makeQualityTable(reads, hasLaneTileXY);
 
     if(maxReadLen>65535)
         header->mReadLengthBytes = 4;
@@ -59,6 +59,8 @@ RfqHeader* RfqCodec::makeHeader(vector<ReadPair*>& pairs) {
     if(pairs.size() == 0)
         return NULL;
 
+    vector<Read*> allReads;
+
     RfqHeader* header = new RfqHeader();
     bool hasLaneTileXY = true;
     int maxReadLen = 0;
@@ -72,6 +74,8 @@ RfqHeader* RfqCodec::makeHeader(vector<ReadPair*>& pairs) {
     for(int i=0; i<pairs.size(); i++) {
         Read* r1 = pairs[i]->mLeft;
         Read* r2 = pairs[i]->mRight;
+        allReads.push_back(r1);
+        allReads.push_back(r2);
         qualStr += r1->mQuality;
         qualStr += r2->mQuality;
         FastqMeta meta1 = FastqMeta::parse(r1->mName);
@@ -115,7 +119,7 @@ RfqHeader* RfqCodec::makeHeader(vector<ReadPair*>& pairs) {
         header->mName2DiffChar = name2DiffChar;
     }
 
-    header->makeQualityTable(qualStr);
+    header->makeQualityTable(allReads, hasLaneTileXY);
 
     if(hasLaneTileXY) {
         header->mFlags |= BIT_HAS_LANE;

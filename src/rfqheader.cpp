@@ -23,6 +23,7 @@ void RfqHeader::read(ifstream& ifs) {
     ifs.read((char*)&mFlags, 2);
     ifs.read((char*)&mName2DiffPos, 1);
     ifs.read(&mName2DiffChar, 1);
+    ifs.read(&mNBaseQual, 1);
     ifs.read((char*)&mQualBins, 1);
 
     mQualBuf = new uint8[mQualBins];
@@ -42,8 +43,13 @@ void RfqHeader::write(ofstream& ofs) {
     ofs.write((const char*)&mFlags, 2);
     ofs.write((const char*)&mName2DiffPos, 1);
     ofs.write(&mName2DiffChar, 1);
+    ofs.write(&mNBaseQual, 1);
     ofs.write((const char*)&mQualBins, 1);
     ofs.write((const char*)mQualBuf, mQualBins);
+}
+
+void RfqHeader::setNBaseQual(char qual) {
+    mNBaseQual = qual;
 }
 
 void RfqHeader::makeQualBitTable() {
@@ -73,16 +79,57 @@ void RfqHeader::computeNormalQualBits() {
     else mNormalQualNumBits = 7;
 }
 
-void RfqHeader::makeQualityTable(string& qualStr) {
+void RfqHeader::makeQualityTable(vector<Read*>& reads, bool hasLaneTileXY) {
     int table[128];
     memset(table, 0, sizeof(int)*128);
 
-    for(int i=0; i<qualStr.length(); i++) {
-        char q = qualStr[i];
-        if(q < 0) {
-            error_exit("bad quality value: " + to_string(q));
+    bool nBaseQualMade = false;
+    bool sharpIsNQual = true;
+    for(int r=0; r<reads.size(); r++) {
+        Read* read = reads[r];
+        const char* seq = read->mSeq.mStr.c_str();
+        for(int i=0; i<read->length(); i++) {
+            char q = read->mQuality[i];
+            if(q < 0) {
+                error_exit("bad quality value: " + to_string(q));
+            }
+            table[q]++;
+            char base = seq[i];
+            if(base == 'N') {
+                if(!nBaseQualMade) {
+                    mNBaseQual = q;
+                    nBaseQualMade = true;
+                } else if(mNBaseQual != q) {
+                    error_exit("The quality score of N bases are different.");
+                }
+            }
+            if(base != 'A' && base != 'T' && base != 'C' && base != 'G' && base != 'N' ) {
+                if(base == 'a' || base =='t' || base == 'c' || base == 't') {
+                    string errmsg("repaq doesn't support FASTQ with lowercase base (a/t/c/g)");
+                    errmsg += "\nbut we get:\n" + read->mSeq.mStr;
+                    error_exit(errmsg);
+                }
+                else {
+                    string errmsg("repaq only supports FASTQ with lowercase base (A/T/C/G/N)");
+                    errmsg += "\nbut we get:\n" + read->mSeq.mStr;
+                    error_exit(errmsg);
+                }
+            }
+            if(q=='#' && base!='N')
+                sharpIsNQual = false;
+            if(nBaseQualMade && q==mNBaseQual && base!='N'){
+                    string errmsg("the quality " + string(1, q) + " should be with N base, but we get " + string(1, base));
+                    errmsg += "\nThe read is:\n" + read->mSeq.mStr + "\n" + read->mQuality;
+                    error_exit(errmsg);
+                }
+
         }
-        table[q]++;
+    }
+
+    // no N base found, and is not Illumina data
+    if(!nBaseQualMade) {
+        if(!sharpIsNQual || !hasLaneTileXY)
+            mNBaseQual = 0;
     }
 
     mQualBins = 0;
@@ -94,7 +141,7 @@ void RfqHeader::makeQualityTable(string& qualStr) {
     for(int i=0; i<128; i++) {
         if(table[i] > 0) {
             mQualBins++;
-            if(i == '#')
+            if(i == mNBaseQual)
                 hasN = true;
         }
 
@@ -102,7 +149,6 @@ void RfqHeader::makeQualityTable(string& qualStr) {
             maxNum = table[i];
             majorQual = i;
         }
-
     }
 
     if(mQualBins == 0)
@@ -130,7 +176,7 @@ void RfqHeader::makeQualityTable(string& qualStr) {
     }
 
     if(!hasN)
-        mQualBuf[mQualBins - 1] = '#';
+        mQualBuf[mQualBins - 1] = mNBaseQual;
 
     makeQualBitTable();
 }
@@ -157,11 +203,11 @@ char RfqHeader::majorQual() {
 }
 
 char RfqHeader::nBaseQual() {
-    return '#';
+    return mNBaseQual;
 }
 
 char RfqHeader::nBaseBit() {
-    return mQual2BitTable['#'];
+    return mQual2BitTable[mNBaseQual];
 }
 
 bool RfqHeader::hasLane() {

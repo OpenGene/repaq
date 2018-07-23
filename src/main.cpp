@@ -28,7 +28,7 @@ int main(int argc, char* argv[]){
     cmd.add<string>("out2", 'O', "read2 output file name when decoding to paired-end FASTQ files", false, "");
     cmd.add("compress", 'c', "compress input to output");
     cmd.add("decompress", 'd', "decompress input to output");
-    cmd.add<int>("chunk", 0 , "the chunk size (kilo bases) for encoding, default 100=100kb.", false, 100);
+    cmd.add<int>("chunk", 0 , "the chunk size (kilo bases) for encoding, default 1000=1000kb.", false, 1000);
 
     cmd.parse_check(argc, argv);
     
