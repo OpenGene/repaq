@@ -5,9 +5,7 @@ For NovaSeq data, the .rfq file can be much smaller than .fq.gz, and the compres
 
 The biggest advantage is that the .rfq file can be further compressed with xz, which is based on LZMA algorithm. The .rfq.xz file can be as small as 5% of the original FASTQ file, or smaller than 30% of the .fq.gz file. Note that usually the gz files are not compressible by xz.
 
-# warning
-* The spec v1.0 has not been locked. So please don't use it for production until v1.0 is released.
-* Currently `repaq` only works for Illumina data.
+* WARNING The spec v1.0 has not been locked. So please don't use it for production until v1.0 is released.*
 
 # Get repaq
 ## download binary 
@@ -69,3 +67,13 @@ Tips:
 * lower compression ratio than `-9` is not recommended, since it will not be faster. The difference is the RAM requirement.
 ```
 ```
+
+# FASTQ Format compatibility  
+repaq was initially designed for compressing Illumina data, but it also works with data from other platforms, like BGI-Seq. To work with repaq, the FASTQ format should meet following condidtions:
+* only has bases A/T/C/G/N.
+* each FASTQ record has, and only has four lines (name, sequence, strand, quality).
+* the name and strand line cannot be longer than 255 bytes.
+* if one quality is with N base, it cannot be with other bases. For example, if `#` is with N base, it cannot be with `A/T/C/G`.
+* the number of different quality characters cannot be more than 64.
+
+`repaq` works best for Illumina data directly output by `bcl2fastq`.
