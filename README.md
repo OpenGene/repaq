@@ -1,9 +1,13 @@
 # repaq
-A toolto repack FASTQ to a smaller binary file (.rfq), which can be further compressed by xz  (.rfq.xz).   
+A tool to repack FASTQ to a smaller binary file (.rfq), which can be further compressed by xz  (.rfq.xz).   
 
 For NovaSeq data, the .rfq file can be much smaller than .fq.gz, and the compressing time is usually less than 1/5 of gzip compression. 
 
 The biggest advantage is that the .rfq file can be further compressed with xz, which is based on LZMA algorithm. The .rfq.xz file can be as small as 5% of the original FASTQ file, or smaller than 30% of the .fq.gz file. Note that usually the gz files are not compressible by xz.
+
+# warning
+* The spec v1.0 has not been locked. So please don't use it for production until v1.0is released.
+* Currently `repaq` only works for Illumina data.
 
 # Get repaq
 ## download binary 
