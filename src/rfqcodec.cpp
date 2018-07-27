@@ -356,8 +356,13 @@ RfqChunk* RfqCodec::encodeChunk(vector<Read*>& reads, bool isPE) {
                 strandLenBuf[i] = strandlen;
         }
 
-        if(canBePeInterleaved)
-            r->changeToReverseComplement();
+        if(canBePeInterleaved) {
+            // read2
+            if(i%2 == 1) {
+                r->changeToReverseComplement();
+                //int overlapped = overlap(reads[i-1]->mSeq.mStr, r->mSeq.mStr);
+            }
+        }
 
         memcpy(seqBufOriginal + seqCopied, r->mSeq.mStr.c_str(), rlen);
         memcpy(qualBufOriginal + seqCopied, r->mQuality.c_str(), rlen);
@@ -835,10 +840,56 @@ vector<Read*> RfqCodec::decodeChunk(RfqChunk* chunk) {
         }
 
         Read* read = new Read(name, sequence, strand, quality);
-        if(peInterleaved)
-            read->changeToReverseComplement();
+        if(peInterleaved) {
+            // read2
+            if(r % 2 == 1)
+                read->changeToReverseComplement();
+        }
         ret.push_back(read);
     }
 
     return ret;
+}
+
+int RfqCodec::overlap(string& r1, string& r2) {
+    const int start = 12;
+    const int len1 = r1.length();
+    const int len2 = r2.length();
+    const int minlen = min(len1, len2);
+    const char* data1 = r1.c_str();
+    const char* data2 = r2.c_str();
+    // o = overlap len
+
+    // forward
+    // R1R1R1R1
+    //     R2R2R2R2
+    for(int o = start; o<=minlen; o++) {
+        bool overlapped = true;
+        for(int i=0; i<o; i++) {
+            if(data1[len1 - o + i] != data2[i]) {
+                overlapped = false;
+                break;
+            }
+        }
+        if(overlapped)
+            return o;
+    }
+
+    // backward
+    //     R1R1R1R1
+    // R2R2R2R2
+    for(int o = start; o<=minlen; o++) {
+        bool overlapped = true;
+        for(int i=0; i<o; i++) {
+            if(data2[len1 - o + i] != data1[i]) {
+                overlapped = false;
+                break;
+            }
+        }
+        if(overlapped)
+            return -o;
+    }
+
+    // not overlapped
+    return 0;
 }

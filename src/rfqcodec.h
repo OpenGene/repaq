@@ -28,6 +28,7 @@ public:
 private:
     uint32 encodeSeqQual(char* seq, uint8* qual, char* seqEncoded, char* qualEncoded, uint32 totalLen);
     void decodeSeqQual(RfqChunk* chunk, string& seq, string& qual, uint32 len);
+    int overlap(string& r1, string& r2);
 
 private:
     RfqHeader* mHeader;
