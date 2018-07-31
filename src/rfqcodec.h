@@ -27,7 +27,13 @@ public:
 
 private:
     uint32 encodeSeqQual(char* seq, uint8* qual, char* seqEncoded, char* qualEncoded, uint32 totalLen);
+    uint32 encodeQualNormal(char* seq, uint8* qual, char* seqEncoded, char* qualEncoded, uint32 totalLen);
+    uint32 encodeQualByCol(char* seq, uint8* qual, char* seqEncoded, char* qualEncoded, uint32 totalLen);
+    uint32 encodeSingleQualByCol(uint8* qual, uint8 q, uint8* encoded, uint32 totalLen, bool debug = false);
     void decodeSeqQual(RfqChunk* chunk, string& seq, string& qual, uint32 len);
+    void decodeQualNormal(RfqChunk* chunk, string& seq, string& qual, uint32 len);
+    void decodeQualByCol(RfqChunk* chunk, string& seq, string& qual, uint32 len);
+    void decodeSingleQualByCol(uint8* buf, uint32 bufLen, uint8 q, string& seq, string& qual);
     int overlap(string& r1, string& r2);
 
 private:

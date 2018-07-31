@@ -241,3 +241,30 @@ bool RfqHeader::hasLineBreakAtEndR2() {
 bool RfqHeader::supportInterleaved() {
     return mSupportInterleaved;
 }
+
+uint8 RfqHeader::qualBins() {
+    return mQualBins;
+}
+
+uint8* RfqHeader::qualBuf() {
+    return mQualBuf;
+}
+
+uint8 RfqHeader::normalQualBins() {
+    return mQualBins - 1;
+}
+
+uint8* RfqHeader::normalQualBuf() {
+    uint8 bins = normalQualBins();
+    uint8* buf = new uint8[bins];
+    int count = 0;
+    for(int i=0; i<mQualBins; i++) {
+        if(mQualBuf[i] != majorQual()) {
+            buf[count] = mQualBuf[i];
+            count++;
+            if(count > bins)
+                break;
+        }
+    }
+    return buf;
+}

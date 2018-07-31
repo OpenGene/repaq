@@ -75,11 +75,11 @@ bool Options::validate() {
 
     if(ends_with(in1, ""))
 
-    if(chunkSize < 10) {
+    if(chunkSize < 10000) {
         error_exit("chunk size cannot be less than 10 kb");
     }
-    if(chunkSize >1000000000) {
-        error_exit("chunk size cannot be greater than 1,000,000 kb");
+    if(chunkSize >500000000) {
+        error_exit("chunk size cannot be greater than 500,000 kb");
     }
 
     return true;

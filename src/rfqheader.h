@@ -66,6 +66,11 @@ public:
     void makeQualityTable(vector<Read*>& reads, bool hasLaneTileXY);
     void setNBaseQual(char qual);
 
+    uint8 qualBins();
+    uint8* qualBuf();
+    uint8 normalQualBins();
+    uint8* normalQualBuf();
+
 private:
     void makeQualBitTable();
     void computeNormalQualBits();
