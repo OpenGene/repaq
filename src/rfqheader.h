@@ -34,7 +34,9 @@ using namespace std;
 // if set, the data is paired end
 #define BIT_PAIRED_END (1<<5)
 // if set, the quality is encoded by col
-#define BIT_ENCODE_QUAL_BY_COL (1<<6)
+#define BIT_ENCODE_PE_BY_OVERLAP (1<<6)
+// if set, the quality is encoded by col
+#define BIT_ENCODE_QUAL_BY_COL (1<<7)
 // if set, the quality string will not be encoded
 #define BIT_DONT_ENCODE_QUAL (1<<8)
 

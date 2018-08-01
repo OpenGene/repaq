@@ -26,10 +26,10 @@ public:
     vector<Read*> decodeChunk(RfqChunk* chunk);
 
 private:
-    uint32 encodeSeqQual(char* seq, uint8* qual, char* seqEncoded, char* qualEncoded, uint32 totalLen);
-    uint32 encodeQualRunLenCoding(char* seq, uint8* qual, char* seqEncoded, char* qualEncoded, uint32 totalLen);
-    uint32 encodeQualByCol(char* seq, uint8* qual, char* seqEncoded, char* qualEncoded, uint32 totalLen);
-    uint32 encodeSingleQualByCol(uint8* qual, uint8 q, uint8* encoded, uint32 totalLen, bool debug = false);
+    uint32 encodeSeqQual(char* seq, uint8* qual, char* seqEncoded, char* qualEncoded, uint32 seqLen, uint32 quaLen);
+    uint32 encodeQualRunLenCoding(char* seq, uint8* qual, char* seqEncoded, char* qualEncoded, uint32 seqLen, uint32 quaLen);
+    uint32 encodeQualByCol(char* seq, uint8* qual, char* seqEncoded, char* qualEncoded, uint32 seqLen, uint32 quaLen);
+    uint32 encodeSingleQualByCol(uint8* qual, uint8 q, uint8* encoded, uint32 seqLen, uint32 quaLen);
     void decodeSeqQual(RfqChunk* chunk, string& seq, string& qual, uint32 len);
     void decodeQualByRunLenCoding(RfqChunk* chunk, string& seq, string& qual, uint32 len);
     void decodeQualByCol(RfqChunk* chunk, string& seq, string& qual, uint32 len);

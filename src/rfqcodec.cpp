@@ -117,6 +117,7 @@ RfqHeader* RfqCodec::makeHeader(vector<ReadPair*>& pairs) {
         header->mSupportInterleaved = supportInterleaved;
         header->mName2DiffPos = name2DiffPos;
         header->mName2DiffChar = name2DiffChar;
+        header->mFlags |= BIT_ENCODE_PE_BY_OVERLAP;
     }
 
     header->makeQualityTable(allReads, hasLaneTileXY);
@@ -208,6 +209,8 @@ RfqChunk* RfqCodec::encodeChunk(vector<Read*>& reads, bool isPE) {
     // tile, X and Y information are only stored once in odd read1
     // name2 are only stored once in read1, and name2 can be got by transfering read1 to read2 by replace 1 with 2 
     bool canBePeInterleaved = isPE && mHeader->supportInterleaved();
+    bool encodeOverlap = canBePeInterleaved && (mHeader->mFlags & BIT_ENCODE_PE_BY_OVERLAP);
+
     string lastName2;
     uint16 lastX;
     uint16 lastY;
@@ -312,10 +315,17 @@ RfqChunk* RfqCodec::encodeChunk(vector<Read*>& reads, bool isPE) {
     uint8* qualBufOriginal = new uint8[totalReadLen];
     memset(qualBufOriginal, 0, totalReadLen);
 
+    char* overlapBuf = NULL;
+    if(encodeOverlap) {
+        overlapBuf = new char[s/2];
+        memset(overlapBuf, 0, s/2);
+    }
+
     int name1Copied = 0;
     int name2Copied = 0;
     int strandCopied = 0;
     int seqCopied = 0;
+    int qualCopied = 0;
 
     for(int i=0; i<reads.size(); i++) {
         Read* r = reads[i];
@@ -356,17 +366,42 @@ RfqChunk* RfqCodec::encodeChunk(vector<Read*>& reads, bool isPE) {
                 strandLenBuf[i] = strandlen;
         }
 
+        int overlapped = 0;
         if(canBePeInterleaved) {
             // read2
             if(i%2 == 1) {
                 r->changeToReverseComplement();
-                //int overlapped = overlap(reads[i-1]->mSeq.mStr, r->mSeq.mStr);
+                if(encodeOverlap){
+                    overlapped = overlap(reads[i-1]->mSeq.mStr, r->mSeq.mStr);
+                    // limit it in a char
+                    if(overlapped > 127)
+                        overlapped = 127;
+                    if(overlapped < -127)
+                        overlapped = -127;
+                    overlapBuf[i/2] = overlapped;
+                }
             }
         }
 
-        memcpy(seqBufOriginal + seqCopied, r->mSeq.mStr.c_str(), rlen);
-        memcpy(qualBufOriginal + seqCopied, r->mQuality.c_str(), rlen);
-        seqCopied += rlen;
+        if(overlapped == 0) {
+            memcpy(seqBufOriginal + seqCopied, r->mSeq.mStr.c_str(), rlen);
+            seqCopied += rlen;
+        } else if(overlapped > 0) {
+            // forward
+            // R1R1R1R1
+            //     R2R2R2R2
+            memcpy(seqBufOriginal + seqCopied, r->mSeq.mStr.c_str()+overlapped, rlen - overlapped);
+            seqCopied += rlen-overlapped;
+        } else {
+            // backward
+            //     R1R1R1R1
+            // R2R2R2R2
+            memcpy(seqBufOriginal + seqCopied, r->mSeq.mStr.c_str(), rlen + overlapped);
+            seqCopied += rlen+overlapped;
+        }
+
+        memcpy(qualBufOriginal + qualCopied, r->mQuality.c_str(), rlen);
+        qualCopied += rlen;
     }
 
     int encodedSeqBufLen = (totalReadLen + 3) / 4;
@@ -377,7 +412,7 @@ RfqChunk* RfqCodec::encodeChunk(vector<Read*>& reads, bool isPE) {
     char* qualBufEncoded = new char[qualBufLen];
     memset(qualBufEncoded, 0, qualBufLen);
 
-    uint32 encodedQualBufLen = encodeSeqQual(seqBufOriginal, qualBufOriginal, seqBufEncoded, qualBufEncoded, totalReadLen);
+    uint32 encodedQualBufLen = encodeSeqQual(seqBufOriginal, qualBufOriginal, seqBufEncoded, qualBufEncoded, seqCopied, qualCopied);
 
     delete[] seqBufOriginal;
     seqBufOriginal = NULL;
@@ -511,9 +546,9 @@ RfqChunk* RfqCodec::encodeChunk(vector<Read*>& reads, bool isPE) {
     return chunk;
 }
 
-uint32 RfqCodec::encodeSeqQual(char* seq, uint8* qual, char* seqEncoded, char* qualEncoded, uint32 totalLen) {
+uint32 RfqCodec::encodeSeqQual(char* seq, uint8* qual, char* seqEncoded, char* qualEncoded, uint32 seqLen, uint32 quaLen) {
     // encode seq first
-    for(int i=0; i<totalLen; i++) {
+    for(int i=0; i<seqLen; i++) {
         char c = seq[i];
         uint8 val = 0;
         switch(c) {
@@ -536,28 +571,28 @@ uint32 RfqCodec::encodeSeqQual(char* seq, uint8* qual, char* seqEncoded, char* q
 
     // dont encode qual
     if(mHeader->mFlags & BIT_DONT_ENCODE_QUAL) {
-        memcpy(qualEncoded, qual, totalLen);
-        return totalLen;
+        memcpy(qualEncoded, qual, quaLen);
+        return quaLen;
     }
 
     // encode qual by colum mode (such like NovaSeq data)
     if(mHeader->mFlags & BIT_ENCODE_QUAL_BY_COL)
-        return encodeQualByCol(seq, qual, seqEncoded, qualEncoded, totalLen);
+        return encodeQualByCol(seq, qual, seqEncoded, qualEncoded, seqLen, quaLen);
     else
-        return encodeQualRunLenCoding(seq, qual, seqEncoded, qualEncoded, totalLen);
+        return encodeQualRunLenCoding(seq, qual, seqEncoded, qualEncoded, seqLen, quaLen);
 
 }
 
-uint32 RfqCodec::encodeSingleQualByCol(uint8* qual, uint8 q, uint8* encoded, uint32 totalLen, bool debug) {
+uint32 RfqCodec::encodeSingleQualByCol(uint8* qual, uint8 q, uint8* encoded, uint32 seqLen, uint32 quaLen) {
     uint32 bufLen = 0;
     int last = -1;
     int cur = 0;
 
-    while(cur<totalLen) {
+    while(cur<quaLen) {
         // get the pos matches this single qual
         while(qual[cur] != q) {
             cur++;
-            if(cur >= totalLen)
+            if(cur >= quaLen)
                 return bufLen;
         }
 
@@ -568,7 +603,7 @@ uint32 RfqCodec::encodeSingleQualByCol(uint8* qual, uint8 q, uint8* encoded, uin
             // get the consective len
             uint8 consectiveLen = 1;
             while(true) {
-                if(cur + consectiveLen == totalLen || consectiveLen >= 32)
+                if(cur + consectiveLen == quaLen || consectiveLen >= 32)
                     break;
                 if(qual[cur + consectiveLen] == q)
                     consectiveLen++;
@@ -629,7 +664,7 @@ uint32 RfqCodec::encodeSingleQualByCol(uint8* qual, uint8 q, uint8* encoded, uin
     return bufLen;
 }
 
-uint32 RfqCodec::encodeQualByCol(char* seq, uint8* qual, char* seqEncoded, char* qualEncoded, uint32 totalLen) {
+uint32 RfqCodec::encodeQualByCol(char* seq, uint8* qual, char* seqEncoded, char* qualEncoded, uint32 seqLen, uint32 quaLen) {
     // encode quality
     uint8 qualBins = mHeader->normalQualBins();
     uint8* qualBuf = mHeader->normalQualBuf();
@@ -652,7 +687,7 @@ uint32 RfqCodec::encodeQualByCol(char* seq, uint8* qual, char* seqEncoded, char*
     char mq = mHeader->majorQual();
 
     for(int i=0; i<qualBins; i++) {
-        singleQualLens[i] = encodeSingleQualByCol(qual, qualBuf[i], qualOut+qualBufLen, totalLen);
+        singleQualLens[i] = encodeSingleQualByCol(qual, qualBuf[i], qualOut+qualBufLen, seqLen, quaLen);
         qualBufLen += singleQualLens[i];
     }
 
@@ -662,7 +697,7 @@ uint32 RfqCodec::encodeQualByCol(char* seq, uint8* qual, char* seqEncoded, char*
     return qualBufLen;
 }
 
-uint32 RfqCodec::encodeQualRunLenCoding(char* seq, uint8* qual, char* seqEncoded, char* qualEncoded, uint32 totalLen) {
+uint32 RfqCodec::encodeQualRunLenCoding(char* seq, uint8* qual, char* seqEncoded, char* qualEncoded, uint32 seqLen, uint32 quaLen) {
     // encode quality
     uint32 qualBufLen = 0;
     char mq = mHeader->majorQual();
@@ -673,7 +708,7 @@ uint32 RfqCodec::encodeQualRunLenCoding(char* seq, uint8* qual, char* seqEncoded
     char curQual = qual[0];
     int first = 0;
     int i=1;
-    while(i < totalLen) {
+    while(i < quaLen) {
         char q = qual[i];
 
         bool needRestart = false;
@@ -707,7 +742,7 @@ uint32 RfqCodec::encodeQualRunLenCoding(char* seq, uint8* qual, char* seqEncoded
     }
     // encode last one
     // num = 0 means 1 continue
-    uint8 num = totalLen - first - 1;
+    uint8 num = quaLen - first - 1;
     char qualBit = mHeader->qual2bit(curQual);
     uint8 enQual;
     if(curQual == mq) {
@@ -1091,8 +1126,11 @@ int RfqCodec::overlap(string& r1, string& r2) {
                 break;
             }
         }
-        if(overlapped)
+        if(overlapped) {
+            //cerr << r1.substr(len1-o, o) << endl;
+            //cerr << r2.substr(0, o) << endl;
             return o;
+        }
     }
 
     // backward
@@ -1101,13 +1139,16 @@ int RfqCodec::overlap(string& r1, string& r2) {
     for(int o = start; o<=minlen; o++) {
         bool overlapped = true;
         for(int i=0; i<o; i++) {
-            if(data2[len1 - o + i] != data1[i]) {
+            if(data2[len2 - o + i] != data1[i]) {
                 overlapped = false;
                 break;
             }
         }
-        if(overlapped)
+        if(overlapped) {
+            //cerr << r1.substr(0, o) << endl;
+            //cerr << r2.substr(len2-o, o) << endl;
             return -o;
+        }
     }
 
     // not overlapped
