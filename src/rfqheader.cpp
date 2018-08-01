@@ -231,11 +231,11 @@ bool RfqHeader::hasName2() {
 }
 
 bool RfqHeader::hasLineBreakAtEnd() {
-    return mFlags & BIT_HAS_LINE_BREAK_AT_END;
+    return true;
 }
 
 bool RfqHeader::hasLineBreakAtEndR2() {
-    return mFlags & BIT_HAS_LINE_BREAK_AT_END_R2;
+    return true;
 }
 
 bool RfqHeader::supportInterleaved() {

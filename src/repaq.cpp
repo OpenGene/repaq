@@ -40,39 +40,59 @@ void Repaq::decompress(){
 
     codec.setHeader(header);
 
-    string outstr;
-    while(!input.eof()) {
-        RfqChunk* chunk = new RfqChunk(header);
-        chunk->read(input);
-        vector<Read*> reads = codec.decodeChunk(chunk);
-        delete chunk;
-        if(reads.size() == 0)
-            break;
+    bool hasNoLineBreakAtEnd = true;
 
-        if(!outstr.empty()) {
-            // if it is the last chunk, we don't write the last line break
-            if(input.eof() && !header->hasLineBreakAtEnd()) {
-                string nobreak = outstr.substr(0, outstr.length()-1);
-                writer.writeString(nobreak);
-            }
-            else
-                writer.writeString(outstr);
-            outstr.clear();
+    RfqChunk* chunk = NULL;
+    while(!input.eof() || chunk != NULL) {
+        if(!chunk) {
+            chunk = new RfqChunk(header);
+            chunk->read(input);
         }
+        vector<Read*> reads = codec.decodeChunk(chunk);
+        if(reads.size() == 0) {
+            delete chunk;
+            chunk = NULL;
+            break;
+        }
+
+        string outstr;
 
         for(int r=0; r<reads.size(); r++) {
             outstr += reads[r]->toString();
             delete reads[r];
         }
-    }
 
-    if(!outstr.empty()) {
-        if(!header->hasLineBreakAtEnd()) {
-            string nobreak = outstr.substr(0, outstr.length()-1);
-            writer.writeString(nobreak);
+        bool isLastOne = false;
+        bool hasNoLineBreakAtEnd = chunk->mFlags & BIT_HAS_NO_LINE_BREAK_AT_END;
+
+        if(hasNoLineBreakAtEnd) {
+            delete chunk;
+            chunk = NULL;
+            isLastOne = input.eof();
+            // eof sometime doesn't work, we need to check the last chunk to see if it's valid
+            if(!isLastOne) {
+                chunk = new RfqChunk(header);
+                chunk->read(input);
+                isLastOne = chunk->mReads == 0;
+            }
+        }
+
+        // if it's last chunk, we should check the last line break
+        if(hasNoLineBreakAtEnd ) {
+            if(isLastOne) {
+                string nobreak = outstr.substr(0, outstr.length()-1);
+                writer.writeString(nobreak);
+                break;
+            } else {
+                writer.writeString(outstr);
+                continue;
+            }
         }
         else
             writer.writeString(outstr);
+
+        delete chunk;
+        chunk = NULL;
     }
 }
 
@@ -96,29 +116,13 @@ void Repaq::decompressPE(){
         RfqChunk* chunk = new RfqChunk(header);
         chunk->read(input);
         vector<Read*> reads = codec.decodeChunk(chunk);
-        delete chunk;
-        if(reads.size() == 0)
+        if(reads.size() == 0) {
+            delete chunk;
             break;
-
-        if(!outstr1.empty()) {
-            // if it is the last chunk, we don't write the last line break
-            if(input.eof() && !header->hasLineBreakAtEnd()) {
-                string nobreak = outstr1.substr(0, outstr1.length()-1);
-                writer1.writeString(nobreak);
-            }
-            else
-                writer1.writeString(outstr1);
-            outstr1.clear();
-
-            // if it is the last chunk, we don't write the last line break
-            if(input.eof() && !header->hasLineBreakAtEndR2()) {
-                string nobreak = outstr2.substr(0, outstr2.length()-1);
-                writer2.writeString(nobreak);
-            }
-            else
-                writer2.writeString(outstr2);
-            outstr2.clear();
         }
+
+        string outstr1;
+        string outstr2;
 
         for(int r=0; r<reads.size(); r++) {
             if(r%2==0)
@@ -127,24 +131,48 @@ void Repaq::decompressPE(){
                 outstr2 += reads[r]->toString();
             delete reads[r];
         }
-    }
 
-    if(!outstr1.empty()) {
-        if(!header->hasLineBreakAtEnd()) {
-            string nobreak = outstr1.substr(0, outstr1.length()-1);
-            writer1.writeString(nobreak);
+        bool isLastOne = false;
+        bool hasNoLineBreakAtEndR1 = chunk->mFlags & BIT_HAS_NO_LINE_BREAK_AT_END;
+        bool hasNoLineBreakAtEndR2 = chunk->mFlags & BIT_HAS_NO_LINE_BREAK_AT_END_R2;
+
+        if(hasNoLineBreakAtEndR1 || hasNoLineBreakAtEndR2) {
+            delete chunk;
+            chunk = NULL;
+            isLastOne = input.eof();
+            // eof sometime doesn't work, we need to check the last chunk to see if it's valid
+            if(!isLastOne) {
+                chunk = new RfqChunk(header);
+                chunk->read(input);
+                isLastOne = chunk->mReads == 0;
+            }
+        }
+
+        if(hasNoLineBreakAtEndR1) {
+            if(isLastOne) {
+                string nobreak = outstr1.substr(0, outstr1.length()-1);
+                writer1.writeString(nobreak);
+            } else {
+                writer1.writeString(outstr1);
+                continue;
+            }
         }
         else
             writer1.writeString(outstr1);
-    }
 
-    if(!outstr2.empty()) {
-        if(!header->hasLineBreakAtEndR2()) {
-            string nobreak = outstr2.substr(0, outstr2.length()-1);
-            writer2.writeString(nobreak);
+        if(hasNoLineBreakAtEndR2) {
+            if(isLastOne) {
+                string nobreak = outstr2.substr(0, outstr2.length()-1);
+                writer2.writeString(nobreak);
+            } else {
+                writer2.writeString(outstr2);
+                continue;
+            }
         }
         else
             writer2.writeString(outstr2);
+
+        delete chunk;
     }
 }
 
@@ -163,8 +191,6 @@ void Repaq::compress(){
     RfqCodec codec;
     FastqReader reader(mOptions->in1);
 
-    bool hasN = hasLineBreakAtEnd(mOptions->in1);
-
     ofstream out;
     out.open(mOptions->out1, ios::out | ios::binary);
 
@@ -181,14 +207,14 @@ void Repaq::compress(){
         if(totalBses >= mOptions->chunkSize) {
             if(header == NULL) {
                 header = codec.makeHeader(reads);
-                if(hasN)
-                    header->mFlags |= BIT_HAS_LINE_BREAK_AT_END;
                 header->write(out);
             }
             if(header == NULL)
                 error_exit("failed to encode, please confirm the input FASTQ file is valid and not empty");
             RfqChunk* chunk = codec.encodeChunk(reads);
             if(chunk) {
+                if(reader.hasNoLineBreakAtEnd())
+                    chunk->mFlags |= BIT_HAS_NO_LINE_BREAK_AT_END;
                 chunk->write(out);
                 delete chunk;
             }
@@ -201,14 +227,14 @@ void Repaq::compress(){
     if(reads.size() > 0) {
         if(header == NULL) {
             header = codec.makeHeader(reads);
-            if(hasN)
-                header->mFlags |= BIT_HAS_LINE_BREAK_AT_END;
             header->write(out);
         }
         if(header == NULL)
             error_exit("failed to encode, please confirm the input FASTQ file is valid and not empty");
         RfqChunk* chunk = codec.encodeChunk(reads);
         if(chunk) {
+            if(reader.hasNoLineBreakAtEnd())
+                chunk->mFlags |= BIT_HAS_NO_LINE_BREAK_AT_END;
             chunk->write(out);
             delete chunk;
         }
@@ -229,9 +255,6 @@ void Repaq::compressPE(){
     RfqCodec codec;
     FastqReaderPair reader(mOptions->in1, mOptions->in2);
 
-    bool hasN = hasLineBreakAtEnd(mOptions->in1);
-    bool hasN2 = hasLineBreakAtEnd(mOptions->in2);
-
     ofstream out;
     out.open(mOptions->out1, ios::out | ios::binary);
 
@@ -248,16 +271,16 @@ void Repaq::compressPE(){
         if(totalBses >= mOptions->chunkSize) {
             if(header == NULL) {
                 header = codec.makeHeader(reads);
-                if(hasN)
-                    header->mFlags |= BIT_HAS_LINE_BREAK_AT_END;
-                if(hasN2)
-                    header->mFlags |= BIT_HAS_LINE_BREAK_AT_END_R2;
                 header->write(out);
             }
             if(header == NULL)
                 error_exit("failed to encode, please confirm the input FASTQ file is valid and not empty");
             RfqChunk* chunk = codec.encodeChunk(reads);
             if(chunk) {
+                if(reader.mLeft->hasNoLineBreakAtEnd())
+                    chunk->mFlags |= BIT_HAS_NO_LINE_BREAK_AT_END;
+                if(reader.mRight->hasNoLineBreakAtEnd())
+                    chunk->mFlags |= BIT_HAS_NO_LINE_BREAK_AT_END_R2;
                 chunk->write(out);
                 delete chunk;
             }
@@ -270,16 +293,16 @@ void Repaq::compressPE(){
     if(reads.size() > 0) {
         if(header == NULL) {
             header = codec.makeHeader(reads);
-            if(hasN)
-                header->mFlags |= BIT_HAS_LINE_BREAK_AT_END;
-            if(hasN2)
-                header->mFlags |= BIT_HAS_LINE_BREAK_AT_END_R2;
             header->write(out);
         }
         if(header == NULL)
             error_exit("failed to encode, please confirm the input FASTQ file is valid and not empty");
         RfqChunk* chunk = codec.encodeChunk(reads);
         if(chunk) {
+            if(reader.mLeft->hasNoLineBreakAtEnd())
+                chunk->mFlags |= BIT_HAS_NO_LINE_BREAK_AT_END;
+            if(reader.mRight->hasNoLineBreakAtEnd())
+                chunk->mFlags |= BIT_HAS_NO_LINE_BREAK_AT_END_R2;
             chunk->write(out);
             delete chunk;
         }

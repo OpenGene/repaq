@@ -33,10 +33,6 @@ using namespace std;
 #define BIT_HAS_NAME2 (1<<4)
 // if set, the data is paired end
 #define BIT_PAIRED_END (1<<5)
-// if set, the encoded stream has line break in the file end
-#define BIT_HAS_LINE_BREAK_AT_END (1<<6)
-// if set, the encoded stream R2 has line break in the file end
-#define BIT_HAS_LINE_BREAK_AT_END_R2 (1<<7)
 // if set, the quality string will not be encoded
 #define BIT_DONT_ENCODE_QUAL (1<<8)
 

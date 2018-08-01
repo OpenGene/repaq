@@ -45,6 +45,10 @@ using namespace std;
 // tile, X and Y information are only stored once in odd read1
 // name2 are only stored once in read1, and name2 can be got by transfering read1 to read2 by replace 1 with 2 
 #define BIT_PE_INTERLEAVED (1<<9)
+// if set, the encoded stream has line break in the file end
+#define BIT_HAS_NO_LINE_BREAK_AT_END (1<<10)
+// if set, the encoded stream R2 has line break in the file end
+#define BIT_HAS_NO_LINE_BREAK_AT_END_R2 (1<<11)
 
 class RfqChunk{
 public:
