@@ -33,6 +33,8 @@ using namespace std;
 #define BIT_HAS_NAME2 (1<<4)
 // if set, the data is paired end
 #define BIT_PAIRED_END (1<<5)
+// if set, the quality is encoded by col
+#define BIT_ENCODE_QUAL_BY_COL (1<<6)
 // if set, the quality string will not be encoded
 #define BIT_DONT_ENCODE_QUAL (1<<8)
 
@@ -46,8 +48,6 @@ public:
     bool hasX();
     bool hasY();
     bool hasName2();
-    bool hasLineBreakAtEnd();
-    bool hasLineBreakAtEndR2();
 
     char qual2bit(char qual);
     char bit2qual(char qual);

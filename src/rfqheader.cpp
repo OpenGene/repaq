@@ -178,6 +178,10 @@ void RfqHeader::makeQualityTable(vector<Read*>& reads, bool hasLaneTileXY) {
     if(!hasN)
         mQualBuf[mQualBins - 1] = mNBaseQual;
 
+    // make the quality encoded by col for better compression ratio
+    if(mQualBins <= 64)
+        mFlags |= BIT_ENCODE_QUAL_BY_COL;
+
     makeQualBitTable();
 }
 
@@ -228,14 +232,6 @@ bool RfqHeader::hasY() {
 
 bool RfqHeader::hasName2() {
     return mFlags & BIT_HAS_NAME2;
-}
-
-bool RfqHeader::hasLineBreakAtEnd() {
-    return true;
-}
-
-bool RfqHeader::hasLineBreakAtEndR2() {
-    return true;
 }
 
 bool RfqHeader::supportInterleaved() {

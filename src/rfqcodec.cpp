@@ -372,8 +372,10 @@ RfqChunk* RfqCodec::encodeChunk(vector<Read*>& reads, bool isPE) {
     int encodedSeqBufLen = (totalReadLen + 3) / 4;
     char* seqBufEncoded = new char[encodedSeqBufLen];
     memset(seqBufEncoded, 0, encodedSeqBufLen);
-    char* qualBufEncoded = new char[totalReadLen];
-    memset(qualBufEncoded, 0, totalReadLen);
+    // we allocate a little more to guarantee it's enough
+    int qualBufLen = totalReadLen * 1.5;
+    char* qualBufEncoded = new char[qualBufLen];
+    memset(qualBufEncoded, 0, qualBufLen);
 
     uint32 encodedQualBufLen = encodeSeqQual(seqBufOriginal, qualBufOriginal, seqBufEncoded, qualBufEncoded, totalReadLen);
 
@@ -539,10 +541,10 @@ uint32 RfqCodec::encodeSeqQual(char* seq, uint8* qual, char* seqEncoded, char* q
     }
 
     // encode qual by colum mode (such like NovaSeq data)
-    if(mHeader->qualBins() <= 8)
+    if(mHeader->mFlags & BIT_ENCODE_QUAL_BY_COL)
         return encodeQualByCol(seq, qual, seqEncoded, qualEncoded, totalLen);
     else
-        return encodeQualNormal(seq, qual, seqEncoded, qualEncoded, totalLen);
+        return encodeQualRunLenCoding(seq, qual, seqEncoded, qualEncoded, totalLen);
 
 }
 
@@ -651,9 +653,6 @@ uint32 RfqCodec::encodeQualByCol(char* seq, uint8* qual, char* seqEncoded, char*
 
     for(int i=0; i<qualBins; i++) {
         singleQualLens[i] = encodeSingleQualByCol(qual, qualBuf[i], qualOut+qualBufLen, totalLen);
-        if(singleQualLens[i] == 25650) {
-            encodeSingleQualByCol(qual, qualBuf[i], qualOut+qualBufLen, totalLen, true);
-        }
         qualBufLen += singleQualLens[i];
     }
 
@@ -663,7 +662,7 @@ uint32 RfqCodec::encodeQualByCol(char* seq, uint8* qual, char* seqEncoded, char*
     return qualBufLen;
 }
 
-uint32 RfqCodec::encodeQualNormal(char* seq, uint8* qual, char* seqEncoded, char* qualEncoded, uint32 totalLen) {
+uint32 RfqCodec::encodeQualRunLenCoding(char* seq, uint8* qual, char* seqEncoded, char* qualEncoded, uint32 totalLen) {
     // encode quality
     uint32 qualBufLen = 0;
     char mq = mHeader->majorQual();
@@ -761,13 +760,13 @@ void RfqCodec::decodeSeqQual(RfqChunk* chunk, string& seq, string& qual, uint32 
     }
 
     // encode qual by colum mode (such like NovaSeq data)
-    if(mHeader->qualBins() <= 8)
+    if(mHeader->mFlags & BIT_ENCODE_QUAL_BY_COL)
         return decodeQualByCol(chunk, seq, qual, len);
     else
-        return decodeQualNormal(chunk, seq, qual, len);
+        return decodeQualByRunLenCoding(chunk, seq, qual, len);
 }
 
-void RfqCodec::decodeQualNormal(RfqChunk* chunk, string& seq, string& qual, uint32 len) {
+void RfqCodec::decodeQualByRunLenCoding(RfqChunk* chunk, string& seq, string& qual, uint32 len) {
     int mqNumBits = mHeader->majorQualNumBits();
     int nqNumBits = mHeader->normalQualNumBits();
     char nBaseQual = mHeader->nBaseQual();
