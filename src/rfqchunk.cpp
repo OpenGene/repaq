@@ -31,6 +31,8 @@ RfqChunk::~RfqChunk(){
         delete[] mQualBuf;
     if(mStrandBuf)
         delete[] mStrandBuf;
+    if(mOverlapBuf)
+        delete[] mOverlapBuf;
 }
 
 void RfqChunk::readReadLenBuf(ifstream& ifs) {
@@ -131,6 +133,8 @@ void RfqChunk::calcTotalBufSize() {
     mSize =  mReadLenBufSize + mName1LenBufSize + mName2LenBufSize + mStrandLenBufSize;
     mSize += mLaneBufSize + mTileBufSize + mName1BufSize + mName2BufSize + mStrandBufSize;
     mSize += mSeqBufSize + mQualBufSize;
+     if( (mFlags & BIT_PE_INTERLEAVED) && (mHeader->mFlags & BIT_ENCODE_PE_BY_OVERLAP))
+        mSize += mReads/2;
 }
 
 void RfqChunk::read(ifstream& ifs) {
@@ -180,6 +184,11 @@ void RfqChunk::read(ifstream& ifs) {
 
     mQualBuf = new uint8[mQualBufSize];
     ifs.read((char*)mQualBuf, mQualBufSize);
+
+    if( (mFlags & BIT_PE_INTERLEAVED) && (mHeader->mFlags & BIT_ENCODE_PE_BY_OVERLAP)) {
+        mOverlapBuf = new char[mReads/2];
+        ifs.read(mOverlapBuf, mReads/2);
+    }
 }
 
 void RfqChunk::write(ofstream& ofs) {
@@ -233,4 +242,8 @@ void RfqChunk::write(ofstream& ofs) {
     ofs.write(mStrandBuf, mStrandBufSize);
     ofs.write(mSeqBuf, mSeqBufSize);
     ofs.write((char*)mQualBuf, mQualBufSize);
+
+    if( (mFlags & BIT_PE_INTERLEAVED) && (mHeader->mFlags & BIT_ENCODE_PE_BY_OVERLAP)) {
+        ofs.write(mOverlapBuf, mReads/2);
+    }
 }

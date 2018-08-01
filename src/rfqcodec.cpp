@@ -375,9 +375,9 @@ RfqChunk* RfqCodec::encodeChunk(vector<Read*>& reads, bool isPE) {
                     overlapped = overlap(reads[i-1]->mSeq.mStr, r->mSeq.mStr);
                     // limit it in a char
                     if(overlapped > 127)
-                        overlapped = 127;
-                    if(overlapped < -127)
-                        overlapped = -127;
+                        overlapped = 0;
+                    if(overlapped < -126)
+                        overlapped = 0;
                     overlapBuf[i/2] = overlapped;
                 }
             }
@@ -404,7 +404,7 @@ RfqChunk* RfqCodec::encodeChunk(vector<Read*>& reads, bool isPE) {
         qualCopied += rlen;
     }
 
-    int encodedSeqBufLen = (totalReadLen + 3) / 4;
+    int encodedSeqBufLen = (seqCopied + 3) / 4;
     char* seqBufEncoded = new char[encodedSeqBufLen];
     memset(seqBufEncoded, 0, encodedSeqBufLen);
     // we allocate a little more to guarantee it's enough
@@ -540,6 +540,9 @@ RfqChunk* RfqCodec::encodeChunk(vector<Read*>& reads, bool isPE) {
     memcpy(chunk->mQualBuf, qualBufEncoded, encodedQualBufLen);
     delete[] qualBufEncoded;
     qualBufEncoded = NULL;
+
+    if(encodeOverlap)
+        chunk->mOverlapBuf = overlapBuf;
 
     chunk->calcTotalBufSize();
 
@@ -756,10 +759,12 @@ uint32 RfqCodec::encodeQualRunLenCoding(char* seq, uint8* qual, char* seqEncoded
     return qualBufLen;
 }
 
-void RfqCodec::decodeSeqQual(RfqChunk* chunk, string& seq, string& qual, uint32 len) {
+void RfqCodec::decodeSeqQual(RfqChunk* chunk, string& seq, string& qual, uint32 len, uint32* readLenBuf) {
     if(len == 0)
         return;
+    bool encodeOverlap = (chunk->mFlags & BIT_PE_INTERLEAVED) && (mHeader->mFlags & BIT_ENCODE_PE_BY_OVERLAP);
     char nBaseQual = mHeader->nBaseQual();
+
     uint32 decoded = 0;
     // decode sequence
     for(int i=0; i<chunk->mSeqBufSize; i++) {
@@ -783,6 +788,48 @@ void RfqCodec::decodeSeqQual(RfqChunk* chunk, string& seq, string& qual, uint32 
         if(decoded >= len)
             break;
     }
+
+    if(encodeOverlap) {
+        const char* srcBuf = seq.c_str();
+        char* dstBuf = new char[len];
+        uint32 srcPos = 0;
+        uint32 dstPos = 0;
+        for(int r=0; r<chunk->mReads; r++) {
+            uint32 rlen = readLenBuf[r];
+            // read1
+            if(r%2 == 0) {
+                memcpy(dstBuf + dstPos, srcBuf + srcPos, rlen);
+                dstPos += rlen;
+                srcPos += rlen;
+            }
+            // read2
+            else {
+                int ovelapped = chunk->mOverlapBuf[r/2];
+                if(ovelapped == 0) {
+                    memcpy(dstBuf + dstPos, srcBuf + srcPos, rlen);
+                    dstPos += rlen;
+                    srcPos += rlen;
+                } else if(ovelapped > 0) {
+                    // copy the overlap
+                    memcpy(dstBuf + dstPos, srcBuf + srcPos - ovelapped, ovelapped);
+                    memcpy(dstBuf + dstPos + ovelapped, srcBuf + srcPos, rlen - ovelapped);
+                    dstPos += rlen;
+                    srcPos += rlen - ovelapped;
+                } else {
+                    memcpy(dstBuf + dstPos, srcBuf + srcPos, rlen + ovelapped);
+                    int lastRlen = readLenBuf[r-1];
+                    // copy the overlap
+                    memcpy(dstBuf + dstPos + rlen + ovelapped, srcBuf + srcPos - lastRlen, - ovelapped);
+                    dstPos += rlen;
+                    srcPos += rlen + ovelapped;
+                }
+            }
+        }
+        seq = string(dstBuf, len);
+        delete dstBuf;
+        dstBuf = NULL;
+    }
+
 
     // qual is not encoded
     if(mHeader->mFlags & BIT_DONT_ENCODE_QUAL) {
@@ -934,6 +981,7 @@ vector<Read*> RfqCodec::decodeChunk(RfqChunk* chunk) {
         return ret;
 
     bool peInterleaved = chunk->mFlags & BIT_PE_INTERLEAVED;
+    bool encodeOverlap = peInterleaved && (mHeader->mFlags & BIT_ENCODE_PE_BY_OVERLAP);
 
     uint32 readLen0 = 0;
     uint16* rlenBuf16 = (uint16*)chunk->mReadLenBuf;
@@ -946,23 +994,29 @@ vector<Read*> RfqCodec::decodeChunk(RfqChunk* chunk) {
     }
 
     uint32 seqLen = 0;
-    if(chunk->mFlags & BIT_READ_LEN_SAME)
+    uint32* readLenBuf = new uint32[chunk->mReads];
+    if(chunk->mFlags & BIT_READ_LEN_SAME) {
         seqLen = readLen0 * chunk->mReads;
+        for(int i=0; i<chunk->mReads; i++) {
+            readLenBuf[i] = readLen0;
+        }
+    }
     else {
         for(int i=0; i<chunk->mReads; i++) {
             switch(mHeader->mReadLengthBytes) {
-                case 1: seqLen += chunk->mReadLenBuf[i]; break;
-                case 2: seqLen += rlenBuf16[i]; break;
-                case 4: seqLen += rlenBuf32[i]; break;
+                case 1: readLenBuf[i] = chunk->mReadLenBuf[i]; break;
+                case 2: readLenBuf[i] = rlenBuf16[i]; break;
+                case 4: readLenBuf[i] = rlenBuf32[i]; break;
                 default: error_exit("header incorrect: read length bytes should be 1/2/4");
             }
+            seqLen += readLenBuf[i];
         }
     }
 
     string allSeq(seqLen, 'N');
     string allQual(seqLen, mHeader->majorQual());
 
-    decodeSeqQual(chunk, allSeq, allQual, seqLen);
+    decodeSeqQual(chunk, allSeq, allQual, seqLen, readLenBuf);
     int name1Len0 = chunk->mName1LenBuf[0];
     string name10(chunk->mName1Buf, name1Len0);
     int strandLen0 = chunk->mStrandLenBuf[0];

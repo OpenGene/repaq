@@ -91,6 +91,7 @@ public:
     char* mSeqBuf;
     uint8* mQualBuf;
     char* mStrandBuf;
+    char* mOverlapBuf;
 
     // buffers
     uint32 mReadLenBufSize;
