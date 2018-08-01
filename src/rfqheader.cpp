@@ -11,7 +11,7 @@ RfqHeader::RfqHeader(){
     mAlgorithmVersion = ALGORITHM_VER;
     mReadLengthBytes = 1;
     mNBaseQual = '#';
-    mOverlapShift = -20;
+    mOverlapShift = -24;
 }
 
 void RfqHeader::read(ifstream& ifs) {
