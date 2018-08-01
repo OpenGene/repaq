@@ -11,6 +11,7 @@ RfqHeader::RfqHeader(){
     mAlgorithmVersion = ALGORITHM_VER;
     mReadLengthBytes = 1;
     mNBaseQual = '#';
+    mOverlapShift = -20;
 }
 
 void RfqHeader::read(ifstream& ifs) {
@@ -24,6 +25,7 @@ void RfqHeader::read(ifstream& ifs) {
     ifs.read((char*)&mName2DiffPos, 1);
     ifs.read(&mName2DiffChar, 1);
     ifs.read(&mNBaseQual, 1);
+    ifs.read(&mOverlapShift, 1);
     ifs.read((char*)&mQualBins, 1);
 
     mQualBuf = new uint8[mQualBins];
@@ -44,6 +46,7 @@ void RfqHeader::write(ofstream& ofs) {
     ofs.write((const char*)&mName2DiffPos, 1);
     ofs.write(&mName2DiffChar, 1);
     ofs.write(&mNBaseQual, 1);
+    ofs.write(&mOverlapShift, 1);
     ofs.write((const char*)&mQualBins, 1);
     ofs.write((const char*)mQualBuf, mQualBins);
 }

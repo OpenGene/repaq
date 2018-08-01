@@ -373,12 +373,13 @@ RfqChunk* RfqCodec::encodeChunk(vector<Read*>& reads, bool isPE) {
                 r->changeToReverseComplement();
                 if(encodeOverlap){
                     overlapped = overlap(reads[i-1]->mSeq.mStr, r->mSeq.mStr);
+                    // shift it to be better fit the range [-126,127]
                     // limit it in a char
-                    if(overlapped > 127)
+                    if(overlapped + mHeader->mOverlapShift > 127)
                         overlapped = 0;
-                    if(overlapped < -126)
+                    if(overlapped + mHeader->mOverlapShift < -126)
                         overlapped = 0;
-                    overlapBuf[i/2] = overlapped;
+                    overlapBuf[i/2] = overlapped + mHeader->mOverlapShift;
                 }
             }
         }
@@ -804,24 +805,26 @@ void RfqCodec::decodeSeqQual(RfqChunk* chunk, string& seq, string& qual, uint32 
             }
             // read2
             else {
-                int ovelapped = chunk->mOverlapBuf[r/2];
-                if(ovelapped == 0) {
+                int overlapped = chunk->mOverlapBuf[r/2];
+                // shift it back to get the real overlap
+                overlapped -= mHeader->mOverlapShift;
+                if(overlapped == 0) {
                     memcpy(dstBuf + dstPos, srcBuf + srcPos, rlen);
                     dstPos += rlen;
                     srcPos += rlen;
-                } else if(ovelapped > 0) {
+                } else if(overlapped > 0) {
                     // copy the overlap
-                    memcpy(dstBuf + dstPos, srcBuf + srcPos - ovelapped, ovelapped);
-                    memcpy(dstBuf + dstPos + ovelapped, srcBuf + srcPos, rlen - ovelapped);
+                    memcpy(dstBuf + dstPos, srcBuf + srcPos - overlapped, overlapped);
+                    memcpy(dstBuf + dstPos + overlapped, srcBuf + srcPos, rlen - overlapped);
                     dstPos += rlen;
-                    srcPos += rlen - ovelapped;
+                    srcPos += rlen - overlapped;
                 } else {
-                    memcpy(dstBuf + dstPos, srcBuf + srcPos, rlen + ovelapped);
+                    memcpy(dstBuf + dstPos, srcBuf + srcPos, rlen + overlapped);
                     int lastRlen = readLenBuf[r-1];
                     // copy the overlap
-                    memcpy(dstBuf + dstPos + rlen + ovelapped, srcBuf + srcPos - lastRlen, - ovelapped);
+                    memcpy(dstBuf + dstPos + rlen + overlapped, srcBuf + srcPos - lastRlen, - overlapped);
                     dstPos += rlen;
-                    srcPos += rlen + ovelapped;
+                    srcPos += rlen + overlapped;
                 }
             }
         }

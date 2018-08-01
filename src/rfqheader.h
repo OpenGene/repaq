@@ -80,6 +80,7 @@ public:
     char mAlgorithmVersion;
     uint8 mReadLengthBytes;
     uint16 mFlags;
+    char mOverlapShift;
 
     /*
     * PE processing
