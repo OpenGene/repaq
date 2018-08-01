@@ -373,11 +373,10 @@ RfqChunk* RfqCodec::encodeChunk(vector<Read*>& reads, bool isPE) {
                 r->changeToReverseComplement();
                 if(encodeOverlap){
                     overlapped = overlap(reads[i-1]->mSeq.mStr, r->mSeq.mStr);
-                    // shift it to be better fit the range [-126,127]
-                    // limit it in a char
+                    // shift it to be better fit the range [-127,127]
                     if(overlapped + mHeader->mOverlapShift > 127)
                         overlapped = 0;
-                    if(overlapped + mHeader->mOverlapShift < -126)
+                    if(overlapped + mHeader->mOverlapShift < -127)
                         overlapped = 0;
                     overlapBuf[i/2] = overlapped + mHeader->mOverlapShift;
                 }
