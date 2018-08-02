@@ -9,6 +9,17 @@ This tool also supports non-Illumina format FASTQ (i.e. the BGI-SEQ format), but
 
 ***WARNING: be careful about using repaq for production before v1.0 is released, since its spec v1.0 has not been frozen.***
 
+# take a look of the compression ratio
+Here we demonstrate the compression ratio of two paired-end NovaSeq data. You can download these files and test locally.
+* `nova.R1.fq`: 1704 MB, the original read1 file, http://opengene.org/repaq/repaq/testdata/nova.R1.fq
+* `nova.R2.fq`: 1704 MB, the original read2 file, http://opengene.org/repaq/repaq/testdata/nova.R2.fq
+* `nova.R1.fq.gz`: 308 MB (compression ratio 18.08%), the gzip compressed read1 file, http://opengene.org/repaq/repaq/testdata/nova.R1.fq.gz
+* `nova.R2.fq.gz`: 325 MB (compression ratio 19.07%), the gzip compressed read2 file, http://opengene.org/repaq/repaq/testdata/nova.R2.fq.gz
+* `nova.rfq`: 341 MB (compression ratio 10.01%), the repacked file of read1 + read2, http://opengene.org/repaq/repaq/testdata/nova.rfq
+* `nova.rfq.xz`: 134 MB (compression ratio 3.93%), the xz compressed file of `nova.rfq`, http://opengene.org/repaq/repaq/testdata/nova.rfq.xz
+
+See? The size of final `nova.rfq.xz` is only 3.39% of size eof the original FASTQ files! You can decompress it and check the md5, and you will find they are identical!
+
 # get repaq
 ## download binary 
 This binary is only for Linux systems: http://opengene.org/repaq/repaq
