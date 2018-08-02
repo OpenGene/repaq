@@ -34,9 +34,9 @@ void Repaq::decompress(){
     RfqHeader* header = new RfqHeader();
     header->read(input);
 
-    if(header->mFlags & BIT_PAIRED_END) {
+    /*if(header->mFlags & BIT_PAIRED_END) {
         error_exit("The input RFQ file was encoded by paired-end FASTQ, you should specify <out1> and <out2>");
-    }
+    }*/
 
     codec.setHeader(header);
 

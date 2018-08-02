@@ -18,8 +18,6 @@ Options::Options(){
 }
 
 bool Options::isFastqFile(string filename) {
-    if(filename == "/dev/stdin" || filename=="/dev/stdout")
-        return true;
     if(ends_with(filename, ".fq") || ends_with(filename, ".fastq") || ends_with(filename, ".fq.gz")|| ends_with(filename, ".fastq.gz"))
         return true;
 
@@ -27,8 +25,6 @@ bool Options::isFastqFile(string filename) {
 }
 
 bool Options::isRfqFile(string filename) {
-    if(filename == "/dev/stdin" || filename=="/dev/stdout")
-        return true;
     if(ends_with(filename, ".rfq") || ends_with(filename, ".rfq.xz"))
         return true;
 
@@ -62,8 +58,8 @@ bool Options::validate() {
     if(compressMode == true) {
         if(!out2.empty())
             error_exit("In compress mode, only one RFQ output file is allowed, but you specified <out2>");
-        if(!isRfqFile(out1))
-            error_exit("In compress mode, the output should be a RFQ file. Expect a .rfq file, but got " + out1);
+        //if(!isRfqFile(out1))
+        //    error_exit("In compress mode, the output should be a RFQ file. Expect a .rfq file, but got " + out1);
         if(isFastqFile(out1))
             error_exit("In compress mode, the output should not be a FASTQ file. Expect a .rfq or .rfq.xz file, but got " + out1);
         if(isRfqFile(in1))
