@@ -39,6 +39,8 @@ using namespace std;
 #define BIT_ENCODE_QUAL_BY_COL (1<<7)
 // if set, the quality string will not be encoded
 #define BIT_DONT_ENCODE_QUAL (1<<8)
+// if set, the positions of N bases in the sequence will be encoded, which means the quality of N is not unique
+#define BIT_ENCODE_N_POS (1<<9)
 
 class RfqHeader{
 public:

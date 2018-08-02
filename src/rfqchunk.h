@@ -77,6 +77,8 @@ public:
     uint32 mSeqBufSize;
     // size of encoded quality buffer
     uint32 mQualBufSize;
+    // size of encoded N positions
+    uint32 mNPosBufSize;
     // buffers
     uint8* mReadLenBuf;
     uint8* mName1LenBuf;
@@ -92,6 +94,7 @@ public:
     uint8* mQualBuf;
     char* mStrandBuf;
     char* mOverlapBuf;
+    uint8* mNPosBuf;
 
     // buffers
     uint32 mReadLenBufSize;

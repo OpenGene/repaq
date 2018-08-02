@@ -109,17 +109,19 @@ void RfqHeader::makeQualityTable(vector<Read*>& reads, bool hasLaneTileXY) {
                     mNBaseQual = q;
                     nBaseQualMade = true;
                 } else if(mNBaseQual != q) {
-                    error_exit("The quality score of N bases are different.");
+                    //error_exit("The quality score of N bases are different.");
+                    mFlags |= BIT_ENCODE_N_POS;
+                    mNBaseQual = -1;
                 }
             }
             if(base != 'A' && base != 'T' && base != 'C' && base != 'G' && base != 'N' ) {
                 if(base == 'a' || base =='t' || base == 'c' || base == 't') {
-                    string errmsg("repaq doesn't support FASTQ with lowercase base (a/t/c/g)");
+                    string errmsg("repaq doesn't support FASTQ with lowercase bases (a/t/c/g)");
                     errmsg += "\nbut we get:\n" + read->mSeq.mStr;
                     error_exit(errmsg);
                 }
                 else {
-                    string errmsg("repaq only supports FASTQ with lowercase base (A/T/C/G/N)");
+                    string errmsg("repaq only supports FASTQ with uppercase bases (A/T/C/G/N)");
                     errmsg += "\nbut we get:\n" + read->mSeq.mStr;
                     error_exit(errmsg);
                 }
@@ -127,9 +129,12 @@ void RfqHeader::makeQualityTable(vector<Read*>& reads, bool hasLaneTileXY) {
             if(q=='#' && base!='N')
                 sharpIsNQual = false;
             if(nBaseQualMade && q==mNBaseQual && base!='N'){
-                    string errmsg("the quality " + string(1, q) + " should be with N base, but we get " + string(1, base));
-                    errmsg += "\nThe read is:\n" + read->mSeq.mStr + "\n" + read->mQuality;
-                    error_exit(errmsg);
+                    //string errmsg("the quality " + string(1, q) + " should be with N base, but we get " + string(1, base));
+                    //errmsg += "\nThe read is:\n" + read->mSeq.mStr + "\n" + read->mQuality;
+                    //error_exit(errmsg);
+                    // in this case, we have to encode N bases
+                    mFlags |= BIT_ENCODE_N_POS;
+                    mNBaseQual = -1;
                 }
 
         }

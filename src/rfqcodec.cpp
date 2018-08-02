@@ -415,6 +415,15 @@ RfqChunk* RfqCodec::encodeChunk(vector<Read*>& reads, bool isPE) {
 
     uint32 encodedQualBufLen = encodeSeqQual(seqBufOriginal, qualBufOriginal, seqBufEncoded, qualBufEncoded, seqCopied, qualCopied);
 
+    // if we need to encode N pos, we use the same method as we encode single quality
+    uint8* nPosBuf = NULL;
+    uint32 nPosBufSize = 0;
+    if(mHeader->mFlags & BIT_ENCODE_N_POS) {
+        nPosBuf = new uint8[seqCopied];
+        memset(nPosBuf, 0, seqCopied);
+        nPosBufSize = encodeSingleQualByCol((uint8*)seqBufOriginal, 'N', nPosBuf, seqCopied);
+    }
+
     delete[] seqBufOriginal;
     seqBufOriginal = NULL;
     delete[] qualBufOriginal;
@@ -545,6 +554,13 @@ RfqChunk* RfqCodec::encodeChunk(vector<Read*>& reads, bool isPE) {
     if(encodeOverlap)
         chunk->mOverlapBuf = overlapBuf;
 
+    if(mHeader->mFlags & BIT_ENCODE_N_POS) {
+        chunk->mNPosBuf = new uint8[nPosBufSize];
+        chunk->mNPosBufSize = nPosBufSize;
+        memcpy(chunk->mNPosBuf, nPosBuf, nPosBufSize);
+        delete[] nPosBuf;
+    }
+
     chunk->calcTotalBufSize();
 
     return chunk;
@@ -587,7 +603,7 @@ uint32 RfqCodec::encodeSeqQual(char* seq, uint8* qual, char* seqEncoded, char* q
 
 }
 
-uint32 RfqCodec::encodeSingleQualByCol(uint8* qual, uint8 q, uint8* encoded, uint32 seqLen, uint32 quaLen) {
+uint32 RfqCodec::encodeSingleQualByCol(uint8* qual, uint8 q, uint8* encoded, uint32 quaLen) {
     uint32 bufLen = 0;
     int last = -1;
     int cur = 0;
@@ -691,7 +707,7 @@ uint32 RfqCodec::encodeQualByCol(char* seq, uint8* qual, char* seqEncoded, char*
     char mq = mHeader->majorQual();
 
     for(int i=0; i<qualBins; i++) {
-        singleQualLens[i] = encodeSingleQualByCol(qual, qualBuf[i], qualOut+qualBufLen, seqLen, quaLen);
+        singleQualLens[i] = encodeSingleQualByCol(qual, qualBuf[i], qualOut+qualBufLen, quaLen);
         qualBufLen += singleQualLens[i];
     }
 
@@ -838,6 +854,11 @@ void RfqCodec::decodeSeqQual(RfqChunk* chunk, string& seq, string& qual, uint32 
         seq = string(dstBuf, len);
         delete dstBuf;
         dstBuf = NULL;
+    }
+
+    // if N positions are encoded, we restore them use the same method as decoding single quality
+    if(mHeader->mFlags & BIT_ENCODE_N_POS) {
+        decodeSingleQualByCol(chunk->mNPosBuf, chunk->mNPosBufSize, 'N', seq, seq);
     }
 
 
