@@ -47,19 +47,19 @@ sudo make install
 For single-end mode:
 ```shell
 # compress
-repaq -i in.fq -o out.rfq
+repaq -c -i in.fq -o out.rfq
 
 # decompress
-repaq -i in.rfq -o out.fq
+repaq -c -i in.rfq -o out.fq
 ```
 
 For paired-end mode:
 ```shell
 # compress
-repaq -i in.R1.fq -I in.R2.fq -o out.rfq
+repaq -d -i in.R1.fq -I in.R2.fq -o out.rfq
 
 # decompress
-repaq -i in.rfq -o out.R1.fq -O out.R2.fq
+repaq -d -i in.rfq -o out.R1.fq -O out.R2.fq
 ```
 
 Tips:
