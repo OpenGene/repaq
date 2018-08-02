@@ -1,11 +1,13 @@
 # repaq
-A tool to repack FASTQ to a smaller binary file (.rfq), which can be further compressed by xz  (.rfq.xz).   
+A tool to repack Illumina format FASTQ to a smaller binary file (.rfq), which can be further compressed by xz or pxz (.rfq.xz).   
 
 For NovaSeq data, the .rfq file can be much smaller than .fq.gz, and the compressing time is usually less than 1/5 of gzip compression. 
 
 The biggest advantage is that the .rfq file can be further compressed with xz, which is based on LZMA algorithm. The .rfq.xz file can be as small as 5% of the original FASTQ file, or smaller than 30% of the .fq.gz file. Note that usually the gz files are not compressible by xz.
 
-***WARNING: don't use repaq for production until v1.0 is released, since its spec v1.0 has not been frozen.***
+This tool also supports non-Illumina format FASTQ (i.e. the BGI-SEQ format), but the compression ratio is not as good Illumina format FASTQ.
+
+***WARNING: be careful about using repaq for production before v1.0 is released, since its spec v1.0 has not been frozen.***
 
 # get repaq
 ## download binary 
@@ -50,20 +52,30 @@ repaq -i in.rfq -o out.R1.fq -O out.R2.fq
 Tips:
 * `-i` and `-I` always denote the first and second input files, while `-o` and `-O` always denote the first and second output files.
 * the FASTQ input/output files can be gzipped if their names are ended with `.gz`.
-* for paired-end data. the .rfq file created in paired-end mode is usually smaller than the sum of the .rfq files created in single-end mode for R1 and R2 respectively.
+* for paired-end data. the .rfq file created in paired-end mode is usually much smaller than the sum of the .rfq files created in single-end mode for R1 and R2 respectively. To obtain high compression rate, please always use PE mode for PE data.
 
 # compress .rfq to .rfq.xz with xz
-To get highest compression ratio (need at least 16G RAM)
+To get highest compression ratio (need at least 16G RAM):
 ```
 xz --lzma2="dict=1000000000" in.rfq
 ```
 
-To get normal ratio (need at least 1G RAM)
+To get normal ratio (need at least 1G RAM):
 ```
 xz -9 in.rfq
 ```
+
+The latest version of xz supports multithreading, so you can specify the thread number with `-T` option:
+```
+xz -T4 -9 in.rfq
+```
+
+You can also use pxz for parallel xz compressing:
+```
+pxz -9 in.rfq
+```
+
 Tips:
-* you can add `-T4` to use 4 threads for parallel compression if your system has enough RAM.
 * lower compression ratio than `-9` is not recommended, since it will not be faster. The difference is the RAM requirement.
 ```
 ```
