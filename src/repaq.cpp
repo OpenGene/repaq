@@ -10,7 +10,7 @@ Repaq::Repaq(Options* opt){
 
 void Repaq::run() {
     if(mOptions->compressMode) {
-        if(mOptions->in2.empty())
+        if(mOptions->in2.empty() && !mOptions->interleavedInput)
             compress();
         else
             compressPE();
@@ -257,7 +257,7 @@ void Repaq::compress(){
 
 void Repaq::compressPE(){
     RfqCodec codec;
-    FastqReaderPair reader(mOptions->in1, mOptions->in2);
+    FastqReaderPair reader(mOptions->in1, mOptions->in2, true, false, mOptions->interleavedInput);
 
     ofstream out;
     out.open(mOptions->out1, ios::out | ios::binary);

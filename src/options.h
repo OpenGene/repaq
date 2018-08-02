@@ -22,6 +22,10 @@ public:
     string out1;
     string in2;
     string out2;
+    bool inputFromSTDIN;
+    bool outputToSTDOUT;
+    // the input R1 file is interleaved
+    bool interleavedInput;
 
     // chunk
     int chunkSize;

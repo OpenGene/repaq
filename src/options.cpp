@@ -12,9 +12,14 @@ Options::Options(){
     out2 = "";
     chunkSize = 1000;
     compressMode = true;
+    inputFromSTDIN = false;
+    outputToSTDOUT = false;
+    interleavedInput = false;
 }
 
 bool Options::isFastqFile(string filename) {
+    if(filename == "/dev/stdin" || filename=="/dev/stdout")
+        return true;
     if(ends_with(filename, ".fq") || ends_with(filename, ".fastq") || ends_with(filename, ".fq.gz")|| ends_with(filename, ".fastq.gz"))
         return true;
 
@@ -22,6 +27,8 @@ bool Options::isFastqFile(string filename) {
 }
 
 bool Options::isRfqFile(string filename) {
+    if(filename == "/dev/stdin" || filename=="/dev/stdout")
+        return true;
     if(ends_with(filename, ".rfq") || ends_with(filename, ".rfq.xz"))
         return true;
 
@@ -30,7 +37,12 @@ bool Options::isRfqFile(string filename) {
 
 bool Options::validate() {
     if(in1.empty()) {
-        error_exit("read1 input should be specified by --in1");
+        if(!in2.empty())
+            error_exit("read2 input is specified by <in2>, but read1 input is not specified by <in1>");
+        if(inputFromSTDIN)
+            in1 = "/dev/stdin";
+        else
+            error_exit("Please specify input file by <in1>, or enable --stdin if you want to read STDIN");
     } else {
         check_file_valid(in1);
     }
@@ -39,7 +51,12 @@ bool Options::validate() {
         check_file_valid(in2);
 
     if(out1.empty()) {
-        error_exit("read1 output should be specified by --out1");
+        if(!out2.empty())
+            error_exit("read2 output is specified by <out2>, but read1 output is not specified by <out1>");
+        if(outputToSTDOUT)
+            out1 = "/dev/stdout";
+        else
+            error_exit("Please specify output file by <out1>, or enable --stdout if you want to read STDIN");
     }
 
     if(compressMode == true) {
