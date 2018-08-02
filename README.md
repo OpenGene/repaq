@@ -13,14 +13,14 @@ This tool also supports non-Illumina format FASTQ (i.e. the BGI-SEQ format), but
 Here we demonstrate the compression ratio of two paired-end NovaSeq data. You can download these files and test locally.
 * `nova.R1.fq`: 1704 MB, the original read1 file, http://opengene.org/repaq/testdata/nova.R1.fq
 * `nova.R2.fq`: 1704 MB, the original read2 file, http://opengene.org/repaq/testdata/nova.R2.fq
-* `nova.R1.fq.gz`: 308 MB (compression ratio 18.08%), the gzip compressed read1 file, http://opengene.org/repaq/testdata/nova.R1.fq.gz
-* `nova.R2.fq.gz`: 325 MB (compression ratio 19.07%), the gzip compressed read2 file, http://opengene.org/repaq/testdata/nova.R2.fq.gz
-* `nova.rfq`: 341 MB (compression ratio 10.01%), the repacked file of read1 + read2, http://opengene.org/repaq/testdata/nova.rfq
-* `nova.rfq.xz`: 134 MB (compression ratio 3.93%), the xz compressed file of `nova.rfq`, http://opengene.org/repaq/testdata/nova.rfq.xz
+* `nova.R1.fq.gz`: 308 MB (CR 18.08%), the gzipped read1, http://opengene.org/repaq/testdata/nova.R1.fq.gz
+* `nova.R2.fq.gz`: 325 MB (CR 19.07%), the gzipped read2, http://opengene.org/repaq/testdata/nova.R2.fq.gz
+* `nova.rfq`: 341 MB (CR 10.01%), the repacked file of read1+read2, http://opengene.org/repaq/testdata/nova.rfq
+* `nova.rfq.xz`: 134 MB (CR 3.93%), the xz compressed `nova.rfq`, http://opengene.org/repaq/testdata/nova.rfq.xz
 
-See? The size of final `nova.rfq.xz` is only 3.39% of size eof the original FASTQ files! You can decompress it and check the md5 to see whether they are identical! 
+See? The size of final `nova.rfq.xz` is only 3.39% of the original FASTQ files! You can decompress it and check the md5 to see whether they are identical! 
 
-Typically it takes less than 1 min to convert `nova.R1.fq` and `nova.R2.fq` to `nova.rfq` file, and takes less than 5 minutes to compress the `nova.rfq` file to `nova.rfq.xz` by xz.
+Typically with one single CPU core, it takes less than 1 minute to convert `nova.R1.fq + nova.R2.fq` to `nova.rfq`, and takes less than 5 minutes to compress the `nova.rfq` to `nova.rfq.xz` by xz.
 
 # get repaq
 ## download binary 
