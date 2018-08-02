@@ -98,7 +98,6 @@ repaq was initially designed for compressing Illumina data, but it also works wi
 * only has bases A/T/C/G/N.
 * each FASTQ record has, and only has four lines (name, sequence, strand, quality).
 * the name and strand line cannot be longer than 255 bytes.
-* if one quality is with N base, it cannot be with other bases. For example, if `#` is with N base, it cannot be with `A/T/C/G`.
-* the number of different quality characters cannot be more than 64.
+* the number of different quality characters cannot be more than 127.
 
 `repaq` works best for Illumina data directly output by `bcl2fastq`.
