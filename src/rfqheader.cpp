@@ -2,6 +2,7 @@
 #include <time.h>
 #include "util.h"
 #include <memory.h>
+#include "endian.h"
 
 RfqHeader::RfqHeader(){
     memset(this, 0, sizeof(RfqHeader));
@@ -23,7 +24,8 @@ void RfqHeader::read(ifstream& ifs) {
         error_exit("The software is too old to read this file, please update repaq. \nSee: https://github.com/OpenGene/repaq");
     }
     ifs.read((char*)&mReadLengthBytes, 1);
-    ifs.read((char*)&mFlags, 2);
+    //ifs.read((char*)&mFlags, 2);
+    mFlags = readLittleEndian16(ifs);
     ifs.read((char*)&mName2DiffPos, 1);
     ifs.read(&mName2DiffChar, 1);
     ifs.read(&mNBaseQual, 1);
@@ -45,7 +47,8 @@ void RfqHeader::write(ofstream& ofs) {
     ofs.write(mRepaqVersion, 5);
     ofs.write(&mAlgorithmVersion, 1);
     ofs.write((const char*)&mReadLengthBytes, 1);
-    ofs.write((const char*)&mFlags, 2);
+    //ofs.write((const char*)&mFlags, 2);
+    writeLittleEndian(ofs, mFlags);
     ofs.write((const char*)&mName2DiffPos, 1);
     ofs.write(&mName2DiffChar, 1);
     ofs.write(&mNBaseQual, 1);

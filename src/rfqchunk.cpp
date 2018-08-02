@@ -1,5 +1,6 @@
 #include "rfqchunk.h"
 #include <memory.h>
+#include "endian.h"
 
 RfqChunk::RfqChunk(RfqHeader* header){
     memset(this, 0, sizeof(RfqChunk));
@@ -127,22 +128,35 @@ void RfqChunk::readTileBuf(ifstream& ifs) {
     }
     mTileBuf = new uint16[tileCount];
     ifs.read((char*)mTileBuf, sizeof(uint16)*tileCount);
+    // convert from little endian if the system is big endian
+    if(!isLittleEndian()) {
+        for(int i=0; i<tileCount; i++) {
+            mTileBuf[i] = adaptToLittleEndian(mTileBuf[i]);
+        }
+    }
 }
 
 void RfqChunk::calcTotalBufSize() {
-    mSize =  mReadLenBufSize + mName1LenBufSize + mName2LenBufSize + mStrandLenBufSize;
+    mSize = sizeof(mSize) + sizeof(mReads) + sizeof(mFlags) + sizeof(mSeqBufSize) + sizeof(mQualBufSize);
+    mSize +=  mReadLenBufSize + mName1LenBufSize + mName2LenBufSize + mStrandLenBufSize;
     mSize += mLaneBufSize + mTileBufSize + mName1BufSize + mName2BufSize + mStrandBufSize;
     mSize += mSeqBufSize + mQualBufSize;
-     if( (mFlags & BIT_PE_INTERLEAVED) && (mHeader->mFlags & BIT_ENCODE_PE_BY_OVERLAP))
+    // overlap buf size;
+    if( (mFlags & BIT_PE_INTERLEAVED) && (mHeader->mFlags & BIT_ENCODE_PE_BY_OVERLAP))
         mSize += mReads/2;
 }
 
 void RfqChunk::read(ifstream& ifs) {
-    ifs.read((char*)&mSize, sizeof(uint32));
-    ifs.read((char*)&mReads, sizeof(uint32));
-    ifs.read((char*)&mFlags, sizeof(uint16));
-    ifs.read((char*)&mSeqBufSize, sizeof(uint32));
-    ifs.read((char*)&mQualBufSize, sizeof(uint32));
+    //ifs.read((char*)&mSize, sizeof(uint32));
+    mSize = readLittleEndian32(ifs);
+    //ifs.read((char*)&mReads, sizeof(uint32));
+    mReads = readLittleEndian32(ifs);
+    //ifs.read((char*)&mFlags, sizeof(uint16));
+    mFlags = readLittleEndian16(ifs);
+    //ifs.read((char*)&mSeqBufSize, sizeof(uint32));
+    mSeqBufSize = readLittleEndian32(ifs);
+    //ifs.read((char*)&mQualBufSize, sizeof(uint32));
+    mQualBufSize = readLittleEndian32(ifs);
 
     readReadLenBuf(ifs);
     readName1LenBuf(ifs);
@@ -162,10 +176,22 @@ void RfqChunk::read(ifstream& ifs) {
     if(mHeader->hasX()) {
         mXBuf = new uint16[xyCount];
         ifs.read((char*)mXBuf, sizeof(uint16)*xyCount);
+        // convert from little endian if the system is big endian
+        if(!isLittleEndian()) {
+            for(int i=0; i<xyCount; i++) {
+                mXBuf[i] = adaptToLittleEndian(mXBuf[i]);
+            }
+        }
     }
-    if(mHeader->hasLane()) {
+    if(mHeader->hasY()) {
         mYBuf = new uint16[xyCount];
         ifs.read((char*)mYBuf, sizeof(uint16)*xyCount);
+        // convert from little endian if the system is big endian
+        if(!isLittleEndian()) {
+            for(int i=0; i<xyCount; i++) {
+                mYBuf[i] = adaptToLittleEndian(mYBuf[i]);
+            }
+        }
     }
 
     mName1Buf = new char[mName1BufSize];
@@ -192,11 +218,16 @@ void RfqChunk::read(ifstream& ifs) {
 }
 
 void RfqChunk::write(ofstream& ofs) {
-    ofs.write((const char*)&mSize, sizeof(uint32));
-    ofs.write((const char*)&mReads, sizeof(uint32));
-    ofs.write((char*)&mFlags, sizeof(uint16));
-    ofs.write((const char*)&mSeqBufSize, sizeof(uint32));
-    ofs.write((const char*)&mQualBufSize, sizeof(uint32));
+    //ofs.write((const char*)&mSize, sizeof(uint32));
+    writeLittleEndian(ofs, mSize);
+    //ofs.write((const char*)&mReads, sizeof(uint32));
+    writeLittleEndian(ofs, mReads);
+    //ofs.write((char*)&mFlags, sizeof(uint16));
+    writeLittleEndian(ofs, mFlags);
+    //ofs.write((const char*)&mSeqBufSize, sizeof(uint32));
+    writeLittleEndian(ofs, mSeqBufSize);
+    //ofs.write((const char*)&mQualBufSize, sizeof(uint32));
+    writeLittleEndian(ofs, mQualBufSize);
 
     ofs.write((const char*)mReadLenBuf, mReadLenBufSize);
     ofs.write((const char*)mName1LenBuf, mName1LenBufSize);
@@ -225,16 +256,54 @@ void RfqChunk::write(ofstream& ofs) {
             else
                 tileCount = mReads;
         }
+        // convert to little endian if the system is big endian
+        if(!isLittleEndian()) {
+            for(int i=0; i<tileCount; i++) {
+                mTileBuf[i] = adaptToLittleEndian(mTileBuf[i]);
+            }
+        }
         ofs.write((const char*)mTileBuf, sizeof(uint16)*tileCount);
+        // then restore it back
+        if(!isLittleEndian()) {
+            for(int i=0; i<tileCount; i++) {
+                mTileBuf[i] = adaptToLittleEndian(mTileBuf[i]);
+            }
+        }
     }
 
     int xyCount = mReads;
     if(mFlags & BIT_PE_INTERLEAVED)
         xyCount = mReads/2;
-    if(mHeader->hasX())
+    if(mHeader->hasX()) {
+        // convert to little endian if the system is big endian
+        if(!isLittleEndian()) {
+            for(int i=0; i<xyCount; i++) {
+                mXBuf[i] = adaptToLittleEndian(mXBuf[i]);
+            }
+        }
         ofs.write((const char*)mXBuf, sizeof(uint16)*xyCount);
-    if(mHeader->hasY())
+        // then restore it back
+        if(!isLittleEndian()) {
+            for(int i=0; i<xyCount; i++) {
+                mXBuf[i] = adaptToLittleEndian(mXBuf[i]);
+            }
+        }
+    }
+    if(mHeader->hasY()) {
+        // convert to little endian if the system is big endian
+        if(!isLittleEndian()) {
+            for(int i=0; i<xyCount; i++) {
+                mYBuf[i] = adaptToLittleEndian(mYBuf[i]);
+            }
+        }
         ofs.write((const char*)mYBuf, sizeof(uint16)*xyCount);
+        // then restore it back
+        if(!isLittleEndian()) {
+            for(int i=0; i<xyCount; i++) {
+                mYBuf[i] = adaptToLittleEndian(mYBuf[i]);
+            }
+        }
+    }
 
     ofs.write(mName1Buf, mName1BufSize);
     if(mHeader->hasName2())

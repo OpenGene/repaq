@@ -108,6 +108,10 @@ void Repaq::decompressPE(){
     RfqHeader* header = new RfqHeader();
     header->read(input);
 
+    if( (header->mFlags & BIT_PAIRED_END) == false) {
+        error_exit("The input RFQ file was encoded by single-end FASTQ, you should not specify <out2>");
+    }
+
     codec.setHeader(header);
 
     string outstr1;

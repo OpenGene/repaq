@@ -4,6 +4,7 @@
 #include "fastqmeta.h"
 #include <memory.h>
 #include <sstream>
+#include "endian.h"
 
 RfqCodec::RfqCodec(){
     mHeader = NULL;
@@ -694,9 +695,16 @@ uint32 RfqCodec::encodeQualByCol(char* seq, uint8* qual, char* seqEncoded, char*
         qualBufLen += singleQualLens[i];
     }
 
+    // convert to little endian if the system is big endian
+    if(!isLittleEndian()) {
+        for(int i=0; i<qualBins; i++) {
+            singleQualLens[i] = adaptToLittleEndian(singleQualLens[i]);
+        }
+    }
     memcpy(singleQualLenBuf, singleQualLens, sizeof(uint32)*qualBins);
 
     delete qualBuf;
+    delete singleQualLens;
     return qualBufLen;
 }
 
@@ -964,6 +972,12 @@ void RfqCodec::decodeQualByCol(RfqChunk* chunk, string& seq, string& qual, uint3
 
     uint32* singleQualLens = new uint32[qualBins];
     memcpy(singleQualLens, chunk->mQualBuf, sizeof(uint32)*qualBins);
+    // convert from little endian if the system is big endian
+    if(!isLittleEndian()) {
+        for(int i=0; i<qualBins; i++) {
+            singleQualLens[i] = adaptToLittleEndian(singleQualLens[i]);
+        }
+    }
     consumed += sizeof(uint32)*qualBins;
 
     char mq = mHeader->majorQual();
@@ -974,6 +988,7 @@ void RfqCodec::decodeQualByCol(RfqChunk* chunk, string& seq, string& qual, uint3
     }
 
     delete qualBuf;
+    delete singleQualLens;
 }
 
 vector<Read*> RfqCodec::decodeChunk(RfqChunk* chunk) {
