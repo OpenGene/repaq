@@ -9,6 +9,7 @@ RfqHeader::RfqHeader(){
     mRepaqFlag[1] = 'F';
     mRepaqFlag[2] = 'Q';
     mAlgorithmVersion = ALGORITHM_VER;
+    memcpy(mRepaqVersion, VERSION_NUM, min(5, (int)sizeof(VERSION_NUM)));
     mReadLengthBytes = 1;
     mNBaseQual = '#';
     mOverlapShift = -24;
@@ -16,6 +17,7 @@ RfqHeader::RfqHeader(){
 
 void RfqHeader::read(ifstream& ifs) {
     ifs.read(mRepaqFlag, 3);
+    ifs.read(mRepaqVersion, 5);
     ifs.read(&mAlgorithmVersion, 1);
     if(ALGORITHM_VER < mAlgorithmVersion) {
         error_exit("The software is too old to read this file, please update repaq. \nSee: https://github.com/OpenGene/repaq");
@@ -40,6 +42,7 @@ void RfqHeader::read(ifstream& ifs) {
 
 void RfqHeader::write(ofstream& ofs) {
     ofs.write(mRepaqFlag, 3);
+    ofs.write(mRepaqVersion, 5);
     ofs.write(&mAlgorithmVersion, 1);
     ofs.write((const char*)&mReadLengthBytes, 1);
     ofs.write((const char*)&mFlags, 2);

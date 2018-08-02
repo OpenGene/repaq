@@ -76,6 +76,7 @@ private:
 public:
     // the flag should be "repaq"
     char mRepaqFlag[3];
+    char mRepaqVersion[5];
     // to support backward compatibility
     char mAlgorithmVersion;
     uint8 mReadLengthBytes;
