@@ -50,13 +50,13 @@ For single-end mode:
 repaq -c -i in.fq -o out.rfq
 
 # decompress
-repaq -c -i in.rfq -o out.fq
+repaq -d -i in.rfq -o out.fq
 ```
 
 For paired-end mode:
 ```shell
 # compress
-repaq -d -i in.R1.fq -I in.R2.fq -o out.rfq
+repaq -c -i in.R1.fq -I in.R2.fq -o out.rfq
 
 # decompress
 repaq -d -i in.rfq -o out.R1.fq -O out.R2.fq
