@@ -101,3 +101,19 @@ repaq was initially designed for compressing Illumina data, but it also works wi
 * the number of different quality characters cannot be more than 127.
 
 `repaq` works best for Illumina data directly output by `bcl2fastq`.
+
+# all options
+```
+options:
+  -i, --in1               input file name (string [=])
+  -o, --out1              output file name (string [=])
+  -I, --in2               read2 input file name when encoding paired-end FASTQ files (string [=])
+  -O, --out2              read2 output file name when decoding to paired-end FASTQ files (string [=])
+  -c, --compress          compress input to output
+  -d, --decompress        decompress input to output
+  -k, --chunk             the chunk size (kilo bases) for encoding, default 1000=1000kb. (int [=1000])
+      --stdin             input from STDIN. If the STDIN is interleaved paired-end FASTQ, please also add --interleaved_in.
+      --stdout            write to STDOUT. When decompressing PE data, this option will result in interleaved FASTQ output for paired-end input. Disabled by defaut.
+      --interleaved_in    indicate that <in1> is an interleaved paired-end FASTQ which contains both read1 and read2. Disabled by defaut.
+  -?, --help              print this message
+```
