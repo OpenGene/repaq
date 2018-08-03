@@ -13,7 +13,9 @@ string command;
 int main(int argc, char* argv[]){
     // display version info if no argument is given
     if(argc == 1) {
-        cout << "repaq: repack FASTQ to a smaller binary file (.rfq)" << endl << "version " << VERSION_NUM << endl;
+        cerr << "repaq: repack FASTQ to a smaller binary file (.rfq)" << endl << "version " << VERSION_NUM << endl;
+        cerr << "repaq -h to see the help" << endl;
+        return 0;
     }
     if (argc == 2 && strcmp(argv[1], "test")==0){
         UnitTest tester;
@@ -28,7 +30,7 @@ int main(int argc, char* argv[]){
     cmd.add<string>("out2", 'O', "read2 output file name when decoding to paired-end FASTQ files", false, "");
     cmd.add("compress", 'c', "compress input to output");
     cmd.add("decompress", 'd', "decompress input to output");
-    cmd.add<int>("chunk", 0 , "the chunk size (kilo bases) for encoding, default 1000=1000kb.", false, 1000);
+    cmd.add<int>("chunk", 'k' , "the chunk size (kilo bases) for encoding, default 1000=1000kb.", false, 1000);
     cmd.add("stdin", 0, "input from STDIN. If the STDIN is interleaved paired-end FASTQ, please also add --interleaved_in.");
     cmd.add("stdout", 0, "write to STDOUT. When decompressing PE data, this option will result in interleaved FASTQ output for paired-end input. Disabled by defaut.");
     cmd.add("interleaved_in", 0, "indicate that <in1> is an interleaved paired-end FASTQ which contains both read1 and read2. Disabled by defaut.");
