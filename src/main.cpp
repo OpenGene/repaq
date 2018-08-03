@@ -14,7 +14,7 @@ int main(int argc, char* argv[]){
     // display version info if no argument is given
     if(argc == 1) {
         cerr << "repaq: repack FASTQ to a smaller binary file (.rfq)" << endl << "version " << VERSION_NUM << endl;
-        cerr << "repaq -h to see the help" << endl;
+        cerr << "repaq --help to see the help" << endl;
         return 0;
     }
     if (argc == 2 && strcmp(argv[1], "test")==0){
