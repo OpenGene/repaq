@@ -20,8 +20,8 @@ void RfqHeader::read(ifstream& ifs) {
     ifs.read(mRepaqFlag, 3);
     ifs.read(mRepaqVersion, 5);
     ifs.read(&mAlgorithmVersion, 1);
-    if(ALGORITHM_VER < mAlgorithmVersion) {
-        error_exit("The software is too old to read this file, please update repaq. \nSee: https://github.com/OpenGene/repaq");
+    if(ALGORITHM_VER != mAlgorithmVersion) {
+        error_exit("The data is encoded by different version of repaq, please try repaq v" + string(mRepaqVersion, 5) + ". \nSee: https://github.com/OpenGene/repaq/releases");
     }
     ifs.read((char*)&mReadLengthBytes, 1);
     //ifs.read((char*)&mFlags, 2);

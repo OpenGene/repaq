@@ -30,10 +30,12 @@ private:
     uint32 encodeQualRunLenCoding(char* seq, uint8* qual, char* seqEncoded, char* qualEncoded, uint32 seqLen, uint32 quaLen);
     uint32 encodeQualByCol(char* seq, uint8* qual, char* seqEncoded, char* qualEncoded, uint32 seqLen, uint32 quaLen);
     uint32 encodeSingleQualByCol(uint8* qual, uint8 q, uint8* encoded, uint32 quaLen);
+    uint32 encodeCoords(uint32* data, uint8* buf, uint32 num);
     void decodeSeqQual(RfqChunk* chunk, string& seq, string& qual, uint32 len, uint32* readLenBuf);
     void decodeQualByRunLenCoding(RfqChunk* chunk, string& seq, string& qual, uint32 len);
     void decodeQualByCol(RfqChunk* chunk, string& seq, string& qual, uint32 len);
     void decodeSingleQualByCol(uint8* buf, uint32 bufLen, uint8 q, string& seq, string& qual);
+    void decodeCoords(uint8* buf, uint32 bufLen, uint32* data, uint32 num);
     int overlap(string& r1, string& r2);
 
 private:

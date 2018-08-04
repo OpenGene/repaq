@@ -29,8 +29,8 @@ public:
     string namePart2;
     uint8 lane;
     uint16 tile;
-    uint16 x;
-    uint16 y;
+    uint32 x;
+    uint32 y;
     bool hasLaneTileXY;
 };
 

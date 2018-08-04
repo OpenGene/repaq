@@ -79,6 +79,10 @@ public:
     uint32 mQualBufSize;
     // size of encoded N positions
     uint32 mNPosBufSize;
+    // size of X buffer
+    uint32 mXBufSize;
+    // size of Y buffer
+    uint32 mYBufSize;
     // buffers
     uint8* mReadLenBuf;
     uint8* mName1LenBuf;
@@ -86,8 +90,8 @@ public:
     uint8* mStrandLenBuf;
     uint8* mLaneBuf;
     uint16* mTileBuf;
-    uint16* mXBuf;
-    uint16* mYBuf;
+    uint8* mXBuf;
+    uint8* mYBuf;
     char* mName1Buf;
     char* mName2Buf;
     char* mSeqBuf;

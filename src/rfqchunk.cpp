@@ -150,6 +150,12 @@ void RfqChunk::calcTotalBufSize() {
         mSize += sizeof(mNPosBufSize);
         mSize += mNPosBufSize;
     }
+    if(mHeader->hasX()) {
+        mSize += sizeof(mXBufSize) + mXBufSize;
+    }
+    if(mHeader->hasY()) {
+        mSize += sizeof(mYBufSize) + mYBufSize;
+    }
 }
 
 void RfqChunk::read(ifstream& ifs) {
@@ -183,24 +189,14 @@ void RfqChunk::read(ifstream& ifs) {
     if(mFlags & BIT_PE_INTERLEAVED)
         xyCount = mReads / 2;
     if(mHeader->hasX()) {
-        mXBuf = new uint16[xyCount];
-        ifs.read((char*)mXBuf, sizeof(uint16)*xyCount);
-        // convert from little endian if the system is big endian
-        if(!isLittleEndian()) {
-            for(int i=0; i<xyCount; i++) {
-                mXBuf[i] = adaptToLittleEndian(mXBuf[i]);
-            }
-        }
+        mXBufSize = readLittleEndian32(ifs);
+        mXBuf = new uint8[mXBufSize];
+        ifs.read((char*)mXBuf, mXBufSize);
     }
     if(mHeader->hasY()) {
-        mYBuf = new uint16[xyCount];
-        ifs.read((char*)mYBuf, sizeof(uint16)*xyCount);
-        // convert from little endian if the system is big endian
-        if(!isLittleEndian()) {
-            for(int i=0; i<xyCount; i++) {
-                mYBuf[i] = adaptToLittleEndian(mYBuf[i]);
-            }
-        }
+        mYBufSize = readLittleEndian32(ifs);
+        mYBuf = new uint8[mYBufSize];
+        ifs.read((char*)mYBuf, mYBufSize);
     }
 
     mName1Buf = new char[mName1BufSize];
@@ -291,34 +287,12 @@ void RfqChunk::write(ofstream& ofs) {
     if(mFlags & BIT_PE_INTERLEAVED)
         xyCount = mReads/2;
     if(mHeader->hasX()) {
-        // convert to little endian if the system is big endian
-        if(!isLittleEndian()) {
-            for(int i=0; i<xyCount; i++) {
-                mXBuf[i] = adaptToLittleEndian(mXBuf[i]);
-            }
-        }
-        ofs.write((const char*)mXBuf, sizeof(uint16)*xyCount);
-        // then restore it back
-        if(!isLittleEndian()) {
-            for(int i=0; i<xyCount; i++) {
-                mXBuf[i] = adaptToLittleEndian(mXBuf[i]);
-            }
-        }
+        writeLittleEndian(ofs, mXBufSize);
+        ofs.write((const char*)mXBuf, mXBufSize);
     }
     if(mHeader->hasY()) {
-        // convert to little endian if the system is big endian
-        if(!isLittleEndian()) {
-            for(int i=0; i<xyCount; i++) {
-                mYBuf[i] = adaptToLittleEndian(mYBuf[i]);
-            }
-        }
-        ofs.write((const char*)mYBuf, sizeof(uint16)*xyCount);
-        // then restore it back
-        if(!isLittleEndian()) {
-            for(int i=0; i<xyCount; i++) {
-                mYBuf[i] = adaptToLittleEndian(mYBuf[i]);
-            }
-        }
+        writeLittleEndian(ofs, mYBufSize);
+        ofs.write((const char*)mYBuf, mYBufSize);
     }
 
     ofs.write(mName1Buf, mName1BufSize);

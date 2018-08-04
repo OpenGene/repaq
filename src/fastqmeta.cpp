@@ -26,8 +26,8 @@ FastqMeta FastqMeta::parse(string str) {
     int coordsEndAt = 0;
     uint8 lane = 0;
     uint16 tile = 0;
-    uint16 x = 0;
-    uint16 y = 0;
+    uint32 x = 0;
+    uint32 y = 0;
 
     for(int i=0; i<str.length(); i++) {
         char c = str[i];

@@ -200,10 +200,10 @@ RfqChunk* RfqCodec::encodeChunk(vector<Read*>& reads, bool isPE) {
     memset(laneBuf, 0, sizeof(uint8)*s);
     uint16* tileBuf = new uint16[s];
     memset(tileBuf, 0, sizeof(uint16)*s);
-    uint16* xBuf = new uint16[s];
-    memset(xBuf, 0, sizeof(uint16)*s);
-    uint16* yBuf = new uint16[s];
-    memset(yBuf, 0, sizeof(uint16)*s);
+    uint32* xBuf = new uint32[s];
+    memset(xBuf, 0, sizeof(uint32)*s);
+    uint32* yBuf = new uint32[s];
+    memset(yBuf, 0, sizeof(uint32)*s);
 
     // in this BIT_PE_INTERLEAVED mode
     // the reads are paired-end, interleaved, read2 sequence is reversed and complemented
@@ -213,8 +213,8 @@ RfqChunk* RfqCodec::encodeChunk(vector<Read*>& reads, bool isPE) {
     bool encodeOverlap = canBePeInterleaved && (mHeader->mFlags & BIT_ENCODE_PE_BY_OVERLAP);
 
     string lastName2;
-    uint16 lastX;
-    uint16 lastY;
+    uint32 lastX;
+    uint32 lastY;
     uint16 lastTile;
     uint8 lastLane;
     for(int i=0; i<reads.size(); i++) {
@@ -514,8 +514,26 @@ RfqChunk* RfqCodec::encodeChunk(vector<Read*>& reads, bool isPE) {
     }
 
     // TODO
-    chunk->mXBuf = xBuf;
-    chunk->mYBuf = yBuf;
+    if(mHeader->hasX()) {
+        uint32 num = s;
+        if(canBePeInterleaved)
+            num /= 2;
+        uint8* xBufEncoded = new uint8[num*3];
+        uint32 xBufLen = encodeCoords(xBuf, xBufEncoded, num);
+        chunk->mXBufSize = xBufLen;
+        chunk->mXBuf = xBufEncoded;
+    }
+    if(mHeader->hasY()) {
+        uint32 num = s;
+        if(canBePeInterleaved)
+            num /= 2;
+        uint8* yBufEncoded = new uint8[num*3];
+        uint32 yBufLen = encodeCoords(yBuf, yBufEncoded, num);
+        chunk->mYBufSize = yBufLen;
+        chunk->mYBuf = yBufEncoded;
+    }
+    delete[] xBuf;
+    delete[] yBuf;
 
     if(name1Same) {
         chunk->mName1Buf = new char[name1Len0];
@@ -1065,6 +1083,20 @@ vector<Read*> RfqCodec::decodeChunk(RfqChunk* chunk) {
     uint8 lane0 = 0;
     uint16 tile0 = 0;
 
+    uint32 xyNum = chunk->mReads;
+    if(peInterleaved)
+        xyNum /= 2;
+    uint32* xBuf = new uint32[xyNum];
+    uint32* yBuf = new uint32[xyNum];
+    memset(xBuf, 0, sizeof(uint32) * xyNum);
+    memset(yBuf, 0, sizeof(uint32) * xyNum);
+    if(mHeader->hasX()) {
+        decodeCoords(chunk->mXBuf, chunk->mXBufSize, xBuf, xyNum);
+    }
+    if(mHeader->hasY()) {
+        decodeCoords(chunk->mYBuf, chunk->mYBufSize, yBuf, xyNum);
+    }
+
     char* curName1 = chunk->mName1Buf;
     char* curName2 = chunk->mName2Buf;
     char* curStrand = chunk->mStrandBuf;
@@ -1134,12 +1166,12 @@ vector<Read*> RfqCodec::decodeChunk(RfqChunk* chunk) {
         }
 
         if(mHeader->hasX()) {
-            uint16 x = chunk->mXBuf[xyPos];
+            uint32 x = xBuf[xyPos];
             ss << ":" << x;
         }
 
         if(mHeader->hasY()) {
-            uint16 y = chunk->mYBuf[xyPos];
+            uint32 y = yBuf[xyPos];
             ss << ":" << y;
         }
 
@@ -1195,7 +1227,139 @@ vector<Read*> RfqCodec::decodeChunk(RfqChunk* chunk) {
         ret.push_back(read);
     }
 
+    delete xBuf;
+    delete yBuf;
+
     return ret;
+}
+
+uint32 RfqCodec::encodeCoords(uint32* data, uint8* buf, uint32 num) {
+    //0xxxxxxx: + next byte to form 0~32767 (15 bits)
+    //10xxxxxx: = last + 1~64 (6 bits)
+    //110xxxxx: repeat last value for 1~32 times (5 bits)
+    //111xxxxx: + next two byte to form 0~2M(21 bits)
+
+    //1000 is optimized for Illumina FASTQ
+    uint32 last = 1000;
+    uint8 repeat = 0;
+    uint32 bufLen = 0;
+    for(uint32 i=0; i<num; i++) {
+        uint32 val = data[i];
+        // encode last repeat
+        if(repeat >0) {
+            if(val != last || repeat==32) {
+                uint8 out = repeat - 1;
+                buf[bufLen] = out | 0xC0; //110xxxxx
+                bufLen++;
+                repeat = 0;
+            }
+        }
+        if(val == last) {
+            repeat++;
+            continue;
+        }
+        
+        int diff = val - last;
+        last = val;
+
+        if(diff >0 && diff <= 64) {
+            uint8 out = diff - 1;
+            buf[bufLen] = out | 0x80; //10xxxxxx
+            bufLen++;
+            continue;
+        }
+
+        if(val <= 32767) {
+            uint8 byte0 = (val >> 8);
+            uint8 byte1 = val & 0xFF;
+            buf[bufLen] = byte0;
+            bufLen++;
+            buf[bufLen] = byte1;
+            bufLen++;
+        } else if(val < (1<<21)) {
+            uint8 byte0 = (val >> 16) | 0xE0; //111xxxxx
+            uint8 byte1 = (val >> 8) & 0xFF;
+            uint8 byte2 = val & 0xFF;
+            buf[bufLen] = byte0;
+            bufLen++;
+            buf[bufLen] = byte1;
+            bufLen++;
+            buf[bufLen] = byte2;
+            bufLen++;
+        } else {
+            error_exit("The X/Y coordinate cannot be larger than 2M, but we get: " + to_string(val));
+        }
+
+    }
+
+    // encode the final repeat
+    if(repeat >0) {
+        uint8 out = repeat - 1;
+        buf[bufLen] = out | 0xC0; //110xxxxx
+        bufLen++;
+        repeat = 0;
+    }
+
+    return bufLen;
+}
+
+void RfqCodec::decodeCoords(uint8* buf, uint32 bufLen, uint32* data, uint32 num) {
+    //0xxxxxxx: + next byte to form 0~32767 (15 bits)
+    //10xxxxxx: = last + 1~64 (6 bits)
+    //110xxxxx: repeat last value for 1~32 times (5 bits)
+    //111xxxxx: + next two byte to form 0~2M(21 bits)
+
+    //1000 is optimized for Illumina FASTQ
+    uint32 last = 1000;
+    uint32 consumed = 0;
+    uint32 decoded = 0;
+    while(consumed < bufLen) {
+        uint32 byte0 = buf[consumed];
+        consumed++;
+        //0xxxxxxx: + next byte to form 0~32767 (15 bits)
+        if( (byte0 & 0x80) == 0) {
+            uint8 byte1 = buf[consumed];
+            consumed++;
+            uint32 val = (byte0<<8) | byte1;
+            data[decoded] = val;
+            decoded++;
+            last = val;
+            continue;
+        }
+        //10xxxxxx: = last + 1~64 (6 bits)
+        if( (byte0 & 0x40) == 0) {
+            uint8 diff = (byte0 & 0x3F) + 1;  // get last 6 bits
+            uint32 val = last + diff;
+            data[decoded] = val;
+            decoded++;
+            last = val;
+            continue;
+        }
+        //110xxxxx: repeat last value for 1~32 times (5 bits)
+        if( (byte0 & 0x20) == 0) {
+            uint8 repeat = (byte0 & 0x1F) + 1;  // get last 5 bits
+            for(int i=0; i<repeat; i++) {
+                data[decoded] = last;
+                decoded++;
+            }
+            continue;
+        }
+        //111xxxxx: + next two byte to form 0~2M(21 bits)
+        if( (byte0 & 0x20) == 0x20) {
+            uint32 byte1 = buf[consumed];
+            consumed++;
+            uint32 byte2 = buf[consumed];
+            consumed++;
+            uint32 val = (byte0 & 0x1F)<<16;
+            val |= (byte1<<8);
+            val |= byte2;
+            data[decoded] = val;
+            decoded++;
+            last = val;
+            continue;
+        }
+    }
+
 }
 
 int RfqCodec::overlap(string& r1, string& r2) {
