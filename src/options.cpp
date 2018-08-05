@@ -71,8 +71,8 @@ bool Options::validate() {
     if(compressMode == false) {
         if(!in2.empty())
             error_exit("In decompress mode, only one RFQ input file is allowed, but you specified <in2>");
-        if(!isRfqFile(in1))
-            error_exit("In decompress mode, the input should be a RFQ file. Expect a .rfq file, but got " + out1);
+        //if(!isRfqFile(in1))
+        //    error_exit("In decompress mode, the input should be a RFQ file. Expect a .rfq file, but got " + out1);
         if(isFastqFile(in1))
             error_exit("In decompress mode, the input should not be a FASTQ file. Expect a .rfq or .rfq.xz file, but got " + in1);
         if(isRfqFile(out1))
