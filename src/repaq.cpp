@@ -281,9 +281,15 @@ void Repaq::compressPE(){
                 error_exit("failed to encode, please confirm the input FASTQ file is valid and not empty");
             RfqChunk* chunk = codec.encodeChunk(reads);
             if(chunk) {
-                if(reader.mLeft->hasNoLineBreakAtEnd())
+                bool noLineBreakAtEnd = reader.mLeft->hasNoLineBreakAtEnd();
+                bool noLineBreakAtEndR2;
+                if(!mOptions->interleavedInput)
+                    noLineBreakAtEndR2 = reader.mRight->hasNoLineBreakAtEnd();
+                else
+                    noLineBreakAtEndR2 = noLineBreakAtEnd;
+                if(noLineBreakAtEnd)
                     chunk->mFlags |= BIT_HAS_NO_LINE_BREAK_AT_END;
-                if(reader.mRight->hasNoLineBreakAtEnd())
+                if(noLineBreakAtEndR2)
                     chunk->mFlags |= BIT_HAS_NO_LINE_BREAK_AT_END_R2;
                 chunk->write(out);
                 delete chunk;
@@ -303,9 +309,15 @@ void Repaq::compressPE(){
             error_exit("failed to encode, please confirm the input FASTQ file is valid and not empty");
         RfqChunk* chunk = codec.encodeChunk(reads);
         if(chunk) {
-            if(reader.mLeft->hasNoLineBreakAtEnd())
+            bool noLineBreakAtEnd = reader.mLeft->hasNoLineBreakAtEnd();
+            bool noLineBreakAtEndR2;
+            if(!mOptions->interleavedInput)
+                noLineBreakAtEndR2 = reader.mRight->hasNoLineBreakAtEnd();
+            else
+                noLineBreakAtEndR2 = noLineBreakAtEnd;
+            if(noLineBreakAtEnd)
                 chunk->mFlags |= BIT_HAS_NO_LINE_BREAK_AT_END;
-            if(reader.mRight->hasNoLineBreakAtEnd())
+            if(noLineBreakAtEndR2)
                 chunk->mFlags |= BIT_HAS_NO_LINE_BREAK_AT_END_R2;
             chunk->write(out);
             delete chunk;
