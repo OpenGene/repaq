@@ -100,7 +100,7 @@ repaq can read the input from STDIN, and write the output to STDOUT.
 
 Here gives you an example of compressing the interleaved PE output from fastp by directly using pipes:
 ```shell
-fastp -i R1.fq -I R2.fq --stdout | repaq --interleaved_in --stdin --stdout | xz > out.rpq.xz
+fastp -i R1.fq -I R2.fq --stdout | repaq -c --interleaved_in --stdin --stdout | xz > out.rpq.xz
 ```
 
 # FASTQ Format compatibility  
@@ -119,7 +119,7 @@ options:
   -o, --out1              output file name (string [=])
   -I, --in2               read2 input file name when encoding paired-end FASTQ files (string [=])
   -O, --out2              read2 output file name when decoding to paired-end FASTQ files (string [=])
-  -c, --compress          compress input to output
+  -c, --compress          compress input to output. This is the default mode
   -d, --decompress        decompress input to output
   -k, --chunk             the chunk size (kilo bases) for encoding, default 1000=1000kb. (int [=1000])
       --stdin             input from STDIN. If the STDIN is interleaved paired-end FASTQ, please also add --interleaved_in.
