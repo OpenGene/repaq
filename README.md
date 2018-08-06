@@ -90,7 +90,17 @@ pxz -9 in.rfq
 
 Tips:
 * lower compression ratio than `-9` is not recommended, since it will not be faster. The difference is the RAM requirement.
-```
+
+# STDIN and STDOUT
+repaq can read the input from STDIN, and write the output to STDOUT.
+* specify `--stdin` if you want to read the STDIN for compression or decompression.
+* specify `--stdout` if you want to output to the STDOUT for compression or decompression.
+* in decompression mode, if `--stdout` is specified, the output will be interleaved PE stream.
+* if the STDIN is an interleaved paired-end stream, specify `--interleaved_in` to indicate that.
+
+Here gives you an example of compressing the interleaved PE output from fastp by directly using pipes:
+```shell
+fastp -i R1.fq -I R2.fq --stdout | repaq --interleaved_in --stdin --stdout | xz > out.rpq.xz
 ```
 
 # FASTQ Format compatibility  
