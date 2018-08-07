@@ -14,8 +14,6 @@ int main(int argc, char* argv[]){
     // display version info if no argument is given
     if(argc == 1) {
         cerr << "repaq: repack FASTQ to a smaller binary file (.rfq)" << endl << "version " << VERSION_NUM << endl;
-        cerr << "repaq --help to see the help" << endl;
-        return 0;
     }
     if (argc == 2 && strcmp(argv[1], "test")==0){
         UnitTest tester;
@@ -36,6 +34,11 @@ int main(int argc, char* argv[]){
     cmd.add("interleaved_in", 0, "indicate that <in1> is an interleaved paired-end FASTQ which contains both read1 and read2. Disabled by defaut.");
 
     cmd.parse_check(argc, argv);
+
+    if(argc == 1) {
+        cerr << cmd.usage() <<endl;
+        return 0;
+    }
     
     stringstream ss;
     for(int i=0;i<argc;i++){
