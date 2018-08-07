@@ -9,19 +9,254 @@ Repaq::Repaq(Options* opt){
 }
 
 void Repaq::run() {
-    if(mOptions->compressMode) {
+    if(mOptions->mode == REPAQ_COMPRESS) {
         if(mOptions->in2.empty() && !mOptions->interleavedInput)
             compress();
         else
             compressPE();
     }
-    else {
+    else if(mOptions->mode == REPAQ_DECOMPRESS) {
         if(mOptions->out2.empty())
             decompress();
         else
             decompressPE();
     }
+    else if(mOptions->mode == REPAQ_COMPARE) {
+        if(mOptions->in2.empty())
+            compare();
+        else
+            comparePE();
+    }
+    else {
+        error_exit("no mode specified, you should specify one of compress/decompress/compare mode");
+    }
 }
+
+void Repaq::compare(){
+    RfqCodec codec;
+
+    ifstream input;
+    input.open(mOptions->rfqCompare, ios::in | ios::binary);
+
+    FastqReader reader(mOptions->in1);
+
+    RfqHeader* header = new RfqHeader();
+    header->read(input);
+
+    codec.setHeader(header);
+
+    long fqReads = 0;
+    long fqBases = 0;
+    long rfqReads = 0;
+    long rfqBases = 0;
+
+    RfqChunk* chunk = NULL;
+    while(!input.eof() || chunk != NULL) {
+        if(!chunk) {
+            chunk = new RfqChunk(header);
+            chunk->read(input);
+        }
+        vector<Read*> reads = codec.decodeChunk(chunk);
+        if(reads.size() == 0) {
+            delete chunk;
+            chunk = NULL;
+            break;
+        }
+
+        for(int r=0; r<reads.size(); r++) {
+            Read* rfq = reads[r];
+            rfqBases += rfq->length();
+            rfqReads++;
+
+            Read* fq = reader.read();
+            if(!fq) {
+                string msg = "The RFQ file has more reads than the FASTQ file.";
+                msg += " The RFQ file has >= " + to_string(rfqReads);
+                msg += " reads, while the FASTQ file only has " + to_string(fqReads) + " reads";
+                reportCompareResult(false, msg, fqReads, fqBases, rfqReads, rfqBases);
+                return;
+            }
+
+            fqReads++;
+            fqBases+=fq->length();
+
+            //check read
+            if(rfq->mName != fq->mName) {
+                string msg = "The RFQ file and FASTQ file have different name in the " + to_string(rfqReads) + " read. ";
+                msg += rfq->mName + " | " + fq->mName;
+                reportCompareResult(false, msg, fqReads, fqBases, rfqReads, rfqBases);
+                return;
+            }
+            else if(rfq->mSeq.mStr != fq->mSeq.mStr) {
+                string msg = "The RFQ file and FASTQ file have different sequence in the " + to_string(rfqReads) + " read. ";
+                msg += rfq->mSeq.mStr + " | " + fq->mSeq.mStr;
+                reportCompareResult(false, msg, fqReads, fqBases, rfqReads, rfqBases);
+                return;
+            }
+            else if(rfq->mStrand != fq->mStrand) {
+                string msg = "The RFQ file and FASTQ file have different strand in the " + to_string(rfqReads) + " read. ";
+                msg += rfq->mStrand + " | " + fq->mStrand;
+                reportCompareResult(false, msg, fqReads, fqBases, rfqReads, rfqBases);
+                return;
+            }
+            else if(rfq->mQuality != fq->mQuality) {
+                string msg = "The RFQ file and FASTQ file have different quality in the " + to_string(rfqReads) + " read. ";
+                msg += rfq->mQuality + " | " + fq->mQuality;
+                reportCompareResult(false, msg, fqReads, fqBases, rfqReads, rfqBases);
+                return;
+            }
+
+            delete rfq;
+            delete fq;
+        }
+
+        delete chunk;
+        chunk = NULL;
+    }
+
+    if(reader.read()) {
+        fqReads++;
+        string msg = "The FASTQ file has more reads than the RFQ file.";
+        msg += " The FASTQ file has >= " + to_string(fqReads);
+        msg += " reads, while the RFQ file only has " + to_string(rfqReads) + " reads";
+        reportCompareResult(false, msg, fqReads, fqBases, rfqReads, rfqBases);
+        return;
+    }
+
+    reportCompareResult(true, "", fqReads, fqBases, rfqReads, rfqBases);
+}
+
+void Repaq::comparePE(){
+    RfqCodec codec;
+
+    ifstream input;
+    input.open(mOptions->rfqCompare, ios::in | ios::binary);
+
+    FastqReaderPair reader(mOptions->in1, mOptions->in2);
+
+    RfqHeader* header = new RfqHeader();
+    header->read(input);
+
+    codec.setHeader(header);
+
+    long fqReads = 0;
+    long fqBases = 0;
+    long rfqReads = 0;
+    long rfqBases = 0;
+
+    RfqChunk* chunk = NULL;
+    while(!input.eof() || chunk != NULL) {
+        if(!chunk) {
+            chunk = new RfqChunk(header);
+            chunk->read(input);
+        }
+        vector<Read*> reads = codec.decodeChunk(chunk);
+        if(reads.size() == 0) {
+            delete chunk;
+            chunk = NULL;
+            break;
+        }
+
+        ReadPair* pair=NULL;
+        for(int r=0; r<reads.size(); r++) {
+            Read* rfq = reads[r];
+            rfqBases += rfq->length();
+            rfqReads++;
+
+            if(pair == NULL)
+                pair = reader.read();
+            if(!pair) {
+                string msg = "The RFQ file has more reads than the FASTQ file.";
+                msg += " The RFQ file has >= " + to_string(rfqReads/2);
+                msg += " pairs, while the FASTQ file only has " + to_string(fqReads/2) + " pairs";
+                reportCompareResult(false, msg, fqReads, fqBases, rfqReads, rfqBases);
+                return;
+            }
+
+            Read* fq;
+            if(rfqReads%2==1)
+                fq = pair->mLeft;
+            else
+                fq = pair->mRight;
+
+            fqReads++;
+            fqBases+=fq->length();
+
+            //check read
+            if(rfq->mName != fq->mName) {
+                string msg = "The RFQ file and FASTQ file have different name in the " + to_string(rfqReads/2) + " pair. ";
+                msg += rfq->mName + " | " + fq->mName;
+                reportCompareResult(false, msg, fqReads, fqBases, rfqReads, rfqBases);
+                return;
+            }
+            else if(rfq->mSeq.mStr != fq->mSeq.mStr) {
+                string msg = "The RFQ file and FASTQ file have different sequence in the " + to_string(rfqReads/2) + " pair. ";
+                msg += rfq->mSeq.mStr + " | " + fq->mSeq.mStr;
+                reportCompareResult(false, msg, fqReads, fqBases, rfqReads, rfqBases);
+                return;
+            }
+            else if(rfq->mStrand != fq->mStrand) {
+                string msg = "The RFQ file and FASTQ file have different strand in the " + to_string(rfqReads/2) + " pair. ";
+                msg += rfq->mStrand + " | " + fq->mStrand;
+                reportCompareResult(false, msg, fqReads, fqBases, rfqReads, rfqBases);
+                return;
+            }
+            else if(rfq->mQuality != fq->mQuality) {
+                string msg = "The RFQ file and FASTQ file have different quality in the " + to_string(rfqReads/2) + " pair. ";
+                msg += rfq->mQuality + " | " + fq->mQuality;
+                reportCompareResult(false, msg, fqReads, fqBases, rfqReads, rfqBases);
+                return;
+            }
+
+            delete rfq;
+            if(rfqReads%2==0) {
+                delete pair;
+                pair = NULL;
+            }
+        }
+
+        delete chunk;
+        chunk = NULL;
+    }
+
+    if(reader.read()) {
+        fqReads++;
+        string msg = "The FASTQ file has more reads than the RFQ file.";
+        msg += " The FASTQ file has >= " + to_string(fqReads/2);
+        msg += " pairs, while the RFQ file only has " + to_string(rfqReads/2) + " pairs";
+        reportCompareResult(false, msg, fqReads, fqBases, rfqReads, rfqBases);
+        return;
+    }
+
+    reportCompareResult(true, "", fqReads, fqBases, rfqReads, rfqBases);
+}
+
+void Repaq::reportCompareResult(bool passed, string msg, long fqReads, long fqBases, long rfqReads, long rfqBases) {
+    string json = "{\n";
+    if(passed)
+        json += "\t\"result\":\"passed\",\n";
+    else
+        json += "\t\"result\":\"failed\",\n";
+
+    json += "\t\"msg\":\"" + msg + "\",\n";
+
+    json += "\t\"fastq_reads\":" + to_string(fqReads) + ",\n";
+    json += "\t\"rfq_reads\":" + to_string(rfqReads) + ",\n";
+    json += "\t\"fastq_bases\":" + to_string(fqBases) + ",\n";
+    json += "\t\"rfq_bases\":" + to_string(rfqBases) + "\n";
+
+    json += "}\n";
+
+    if(!mOptions->jsonFileForCompare.empty()) {
+        ofstream out(mOptions->jsonFileForCompare);
+        out.write(json.c_str(), json.length());
+        out.flush();
+        out.close();
+    }
+
+    cout << json;
+}
+
 
 void Repaq::decompress(){
     RfqCodec codec;

@@ -11,7 +11,7 @@ Options::Options(){
     in2 = "";
     out2 = "";
     chunkSize = 1000;
-    compressMode = true;
+    mode = REPAQ_COMPRESS;
     inputFromSTDIN = false;
     outputToSTDOUT = false;
     interleavedInput = false;
@@ -51,11 +51,11 @@ bool Options::validate() {
             error_exit("read2 output is specified by <out2>, but read1 output is not specified by <out1>");
         if(outputToSTDOUT)
             out1 = "/dev/stdout";
-        else
+        else if(mode != REPAQ_COMPARE) 
             error_exit("Please specify output file by <out1>, or enable --stdout if you want to read STDIN");
     }
 
-    if(compressMode == true) {
+    if(mode == REPAQ_COMPRESS) {
         if(!out2.empty())
             error_exit("In compress mode, only one RFQ output file is allowed, but you specified <out2>");
         //if(!isRfqFile(out1))
@@ -68,7 +68,7 @@ bool Options::validate() {
             error_exit("In compress mode, the read2 input should not be a RFQ file. Expect a .fq or .fq.gz file, but got " + in2);
     }
 
-    if(compressMode == false) {
+    if(mode == REPAQ_DECOMPRESS) {
         if(!in2.empty())
             error_exit("In decompress mode, only one RFQ input file is allowed, but you specified <in2>");
         //if(!isRfqFile(in1))
@@ -81,8 +81,16 @@ bool Options::validate() {
             error_exit("In decompress mode, the read2 output should not be a RFQ file. Expect a .fq or .fq.gz file, but got " + out2);
     }
 
+    if(mode == REPAQ_COMPARE) {
+        if(rfqCompare.empty())
+            error_exit("In compare mode, you should specify the RFQ file to compare by <rfq_to_compare>");
+        if(!out1.empty() || !out2.empty() )
+            error_exit("In compare mode, you cannot specify the output by <out1> or <out2>");
+        check_file_valid(rfqCompare);
+    }
+
     if(!out2.empty()) {
-        if(compressMode)
+        if(mode == REPAQ_COMPRESS)
             error_exit("In compress mode, only one rfq output file is allowed");
     }
 

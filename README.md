@@ -113,17 +113,23 @@ repaq was initially designed for compressing Illumina data, but it also works wi
 `repaq` works best for Illumina data directly output by `bcl2fastq`.
 
 # all options
-```
+```shell
 options:
-  -i, --in1               input file name (string [=])
-  -o, --out1              output file name (string [=])
-  -I, --in2               read2 input file name when encoding paired-end FASTQ files (string [=])
-  -O, --out2              read2 output file name when decoding to paired-end FASTQ files (string [=])
-  -c, --compress          compress input to output. This is the default mode
-  -d, --decompress        decompress input to output
-  -k, --chunk             the chunk size (kilo bases) for encoding, default 1000=1000kb. (int [=1000])
-      --stdin             input from STDIN. If the STDIN is interleaved paired-end FASTQ, please also add --interleaved_in.
-      --stdout            write to STDOUT. When decompressing PE data, this option will result in interleaved FASTQ output for paired-end input. Disabled by defaut.
-      --interleaved_in    indicate that <in1> is an interleaved paired-end FASTQ which contains both read1 and read2. Disabled by defaut.
-  -?, --help              print this message
+  -i, --in1                    input file name (string [=])
+  -o, --out1                   output file name (string [=])
+  -I, --in2                    read2 input file name when encoding paired-end FASTQ files (string [=])
+  -O, --out2                   read2 output file name when decoding to paired-end FASTQ files (string [=])
+  -c, --compress               compress input to output
+  -d, --decompress             decompress input to output
+  -k, --chunk                  the chunk size (kilo bases) for encoding, default 1000=1000kb. (int [=1000])
+      --stdin                  input from STDIN. If the STDIN is interleaved paired-end FASTQ, please also add --interleaved_in.
+      --stdout                 write to STDOUT. When decompressing PE data, this option will result in interleaved FASTQ output for paired-end input. Disabled by defaut.
+      --interleaved_in         indicate that <in1> is an interleaved paired-end FASTQ which contains both read1 and read2. Disabled by defaut.
+  
+# following options are used to check the consistency of the compressed data
+  -p, --compare                compare the files read by read to check the compression consistency. <rfq_to_compare> should be specified in this mode.
+  -r, --rfq_to_compare         the RFQ file to be compared with the input. This option is only used in compare mode. (string [=])
+  -j, --json_compare_result    the file to store the comparison result. This is optional since the result is also printed on STDOUT. (string [=])
+
+  -?, --help                   print this message
 ```

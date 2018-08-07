@@ -32,6 +32,9 @@ int main(int argc, char* argv[]){
     cmd.add("stdin", 0, "input from STDIN. If the STDIN is interleaved paired-end FASTQ, please also add --interleaved_in.");
     cmd.add("stdout", 0, "write to STDOUT. When decompressing PE data, this option will result in interleaved FASTQ output for paired-end input. Disabled by defaut.");
     cmd.add("interleaved_in", 0, "indicate that <in1> is an interleaved paired-end FASTQ which contains both read1 and read2. Disabled by defaut.");
+    cmd.add("compare", 'p', "compare the files read by read to check the compression consistency. <rfq_to_compare> should be specified in this mode.");
+    cmd.add<string>("rfq_to_compare", 'r', "the RFQ file to be compared with the input. This option is only used in compare mode.", false, "");
+    cmd.add<string>("json_compare_result", 'j', "the file to store the comparison result. This is optional since the result is also printed on STDOUT.", false, "");
 
     cmd.parse_check(argc, argv);
 
@@ -54,18 +57,31 @@ int main(int argc, char* argv[]){
     opt.out1 = cmd.get<string>("out1");
     opt.in2 = cmd.get<string>("in2");
     opt.out2 = cmd.get<string>("out2");
+    opt.rfqCompare = cmd.get<string>("rfq_to_compare");
+    opt.jsonFileForCompare = cmd.get<string>("json_compare_result");
     opt.chunkSize = cmd.get<int>("chunk") * 1000;
     opt.inputFromSTDIN = cmd.exist("stdin");
     opt.outputToSTDOUT = cmd.exist("stdout");
     opt.interleavedInput = cmd.exist("interleaved_in");
 
-    if(cmd.exist("compress") && cmd.exist("decompress"))
-        error_exit("You cannot specify both compress and decompress, please choose either one");
-    else if(cmd.exist("decompress")) {
-        opt.compressMode = false;
+    int modeNum = 0;
+    if(cmd.exist("compress"))
+        modeNum++;
+    if(cmd.exist("decompress"))
+        modeNum++;
+    if(cmd.exist("compare"))
+        modeNum++;
+    if(modeNum > 1)
+        error_exit("repaq can run in compress/decompress/compare mode, you can only choose any one mode.");
+    
+    if(cmd.exist("decompress"))  {
+        opt.mode = REPAQ_DECOMPRESS;
     }
-    else {
-        opt.compressMode = true;
+    else if(cmd.exist("compare"))  {
+        opt.mode = REPAQ_COMPARE;
+    } else {
+        // compress is the default mode
+        opt.mode = REPAQ_COMPRESS;
     }
 
     opt.validate();

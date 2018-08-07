@@ -8,6 +8,10 @@
 
 using namespace std;
 
+#define REPAQ_COMPRESS 0
+#define REPAQ_DECOMPRESS 1
+#define REPAQ_COMPARE 2
+
 class Options{
 public:
     Options();
@@ -22,6 +26,8 @@ public:
     string out1;
     string in2;
     string out2;
+    string rfqCompare;
+    string jsonFileForCompare;
     bool inputFromSTDIN;
     bool outputToSTDOUT;
     // the input R1 file is interleaved
@@ -29,7 +35,7 @@ public:
 
     // chunk
     int chunkSize;
-    bool compressMode;
+    int mode;
 
 };
 
