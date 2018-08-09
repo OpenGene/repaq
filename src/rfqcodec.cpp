@@ -245,6 +245,7 @@ RfqChunk* RfqCodec::encodeChunk(vector<Read*>& reads, bool isPE) {
                 }
             } else {
                 lastName2 = meta.namePart2;
+                name2Same  &= name20 == meta.namePart2;
             }
         }
 
