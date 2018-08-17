@@ -9,7 +9,7 @@ This tool also supports non-Illumina format FASTQ (i.e. the BGI-SEQ format), but
 
 ***WARNING: be careful about using repaq for production before v1.0 is released, since its spec v1.0 has not been frozen.***
 
-# take a look of the compression ratio
+# take a look at the compression ratio
 Here we demonstrate the compression ratio of two paired-end NovaSeq data. You can download these files and test locally.
 * `nova.R1.fq`: 1704 MB, the original read1 file, http://opengene.org/repaq/testdata/nova.R1.fq
 * `nova.R2.fq`: 1704 MB, the original read2 file, http://opengene.org/repaq/testdata/nova.R2.fq
