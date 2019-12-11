@@ -82,6 +82,8 @@ bool Options::validate() {
     }
 
     if(mode == REPAQ_COMPARE) {
+        if(inputFromSTDIN)
+            rfqCompare = "/dev/stdin";
         if(rfqCompare.empty())
             error_exit("In compare mode, you should specify the RFQ file to compare by <rfq_to_compare>");
         if(!out1.empty() || !out2.empty() )

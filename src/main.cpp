@@ -5,6 +5,8 @@
 #include "options.h"
 #include "unittest.h"
 #include <sstream>
+#include <iostream>
+#include <unistd.h>
 #include "repaq.h"
 #include "util.h"
 
@@ -43,11 +45,6 @@ int main(int argc, char* argv[]){
         return 0;
     }
     
-    stringstream ss;
-    for(int i=0;i<argc;i++){
-        ss << argv[i] << " ";
-    }
-    command = ss.str();
 
     time_t t1 = time(NULL);
 
@@ -59,7 +56,7 @@ int main(int argc, char* argv[]){
     opt.out2 = cmd.get<string>("out2");
     opt.rfqCompare = cmd.get<string>("rfq_to_compare");
     opt.jsonFileForCompare = cmd.get<string>("json_compare_result");
-    opt.chunkSize = cmd.get<int>("chunk") * 1000;
+    opt.chunkSize = max(100, cmd.get<int>("chunk")) * 1000; // use at least 100Kb chunk
     opt.inputFromSTDIN = cmd.exist("stdin");
     opt.outputToSTDOUT = cmd.exist("stdout");
     opt.interleavedInput = cmd.exist("interleaved_in");
@@ -84,10 +81,69 @@ int main(int argc, char* argv[]){
         opt.mode = REPAQ_COMPRESS;
     }
 
+    if(opt.mode == REPAQ_COMPRESS && opt.outputToSTDOUT && !opt.out1.empty()) {
+        cerr << "Output to STDOUT, ignore --out1 = " << opt.out1 << endl;
+        opt.out1 = "";
+    }
+
+    if(opt.mode == REPAQ_DECOMPRESS && opt.inputFromSTDIN && !opt.in1.empty()) {
+        cerr << "Input from STDIN, ignore --in1 = " << opt.in1 << endl;
+        opt.in1 = "";
+    }
+
+    if(opt.mode == REPAQ_COMPARE && opt.inputFromSTDIN && !opt.rfqCompare.empty()) {
+        cerr << "Input from STDIN, ignore --rfq_to_compare = " << opt.rfqCompare << endl;
+        opt.rfqCompare = "";
+    }
+
     opt.validate();
 
-    Repaq repaq(&opt);
-    repaq.run();
+    stringstream ss;
+    for(int i=0;i<argc;i++){
+        ss << argv[i] << " ";
+    }
+    command = ss.str();
 
-    return 0;
+    if(ends_with(opt.out1, ".xz") || ends_with(opt.in1, ".xz") || ends_with(opt.rfqCompare, ".xz")) {
+        if(opt.inputFromSTDIN)
+            error_exit("STDIN cannot be read in xz mode");
+        if(opt.outputToSTDOUT)
+            error_exit("STDOUT cannot be written in xz mode");
+    }
+
+    // deal with xz
+    if(opt.mode == REPAQ_COMPRESS && ends_with(opt.out1, ".xz")) {
+        replaceAll(command, opt.out1, "");
+        replaceAll(command, "-o ", "");
+        replaceAll(command, "--out1=", "");
+        command = command + " --stdout | xz -z -c -9 > " + opt.out1;
+        int ret = system(command.c_str());
+        if(ret != 0) {
+            error_exit("failed to call xz, please confirm that xz is installed in your system");
+        }
+    } else if(opt.mode == REPAQ_DECOMPRESS && ends_with(opt.in1, ".xz")) {
+        replaceAll(command, opt.in1, "");
+        replaceAll(command, "-i", "");
+        replaceAll(command, "--in1=", "");
+        command = "xz -d -c " + opt.in1 + "| " + command + " --stdin " ;
+        int ret = system(command.c_str());
+        if(ret != 0) {
+            error_exit("failed to call xz, please confirm that xz is installed in your system");
+        }
+    }  else if(opt.mode == REPAQ_COMPARE && ends_with(opt.rfqCompare, ".xz")) {
+        replaceAll(command, opt.rfqCompare, "");
+        replaceAll(command, "-r", "");
+        replaceAll(command, "--rfq_to_compare=", "");
+        command = "xz -d -c " + opt.rfqCompare + "| " + command + " --stdin " ;
+        int ret = system(command.c_str());
+        if(ret != 0) {
+            error_exit("failed to call xz, please confirm that xz is installed in your system");
+        }
+    } else {
+
+        Repaq repaq(&opt);
+        repaq.run();
+
+        return 0;
+    }
 }
