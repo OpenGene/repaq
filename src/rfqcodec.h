@@ -29,7 +29,7 @@ private:
     uint32 encodeSeqQual(char* seq, uint8* qual, char* seqEncoded, char* qualEncoded, uint32 seqLen, uint32 quaLen);
     uint32 encodeQualRunLenCoding(char* seq, uint8* qual, char* seqEncoded, char* qualEncoded, uint32 seqLen, uint32 quaLen);
     uint32 encodeQualByCol(char* seq, uint8* qual, char* seqEncoded, char* qualEncoded, uint32 seqLen, uint32 quaLen);
-    uint32 encodeSingleQualByCol(uint8* qual, uint8 q, uint8* encoded, uint32 quaLen);
+    uint32 encodeSingleQualByCol(uint8* qual, uint8 q, uint8* encoded, uint32 quaLen, bool* qualMask);
     uint32 encodeCoords(uint32* data, uint8* buf, uint32 num);
     void decodeSeqQual(RfqChunk* chunk, string& seq, string& qual, uint32 len, uint32* readLenBuf);
     void decodeQualByRunLenCoding(RfqChunk* chunk, string& seq, string& qual, uint32 len);

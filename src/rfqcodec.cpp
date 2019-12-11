@@ -422,7 +422,7 @@ RfqChunk* RfqCodec::encodeChunk(vector<Read*>& reads, bool isPE) {
     if(mHeader->mFlags & BIT_ENCODE_N_POS) {
         nPosBuf = new uint8[seqCopied];
         memset(nPosBuf, 0, seqCopied);
-        nPosBufSize = encodeSingleQualByCol((uint8*)seqBufOriginal, 'N', nPosBuf, seqCopied);
+        nPosBufSize = encodeSingleQualByCol((uint8*)seqBufOriginal, 'N', nPosBuf, seqCopied, NULL);
     }
 
     delete[] seqBufOriginal;
@@ -622,7 +622,7 @@ uint32 RfqCodec::encodeSeqQual(char* seq, uint8* qual, char* seqEncoded, char* q
 
 }
 
-uint32 RfqCodec::encodeSingleQualByCol(uint8* qual, uint8 q, uint8* encoded, uint32 quaLen) {
+uint32 RfqCodec::encodeSingleQualByCol(uint8* qual, uint8 q, uint8* encoded, uint32 quaLen, bool* qualMask) {
     uint32 bufLen = 0;
     int last = -1;
     int cur = 0;
@@ -635,6 +635,9 @@ uint32 RfqCodec::encodeSingleQualByCol(uint8* qual, uint8 q, uint8* encoded, uin
                 return bufLen;
         }
 
+        if(qualMask)
+            qualMask[cur] = true;
+
         // we get a consective q
         // find the consective len
         // encoded it with 110xxxxx, where xxxxx denotes the consective len (1 ~ 32)
@@ -644,11 +647,14 @@ uint32 RfqCodec::encodeSingleQualByCol(uint8* qual, uint8 q, uint8* encoded, uin
             while(true) {
                 if(cur + consectiveLen == quaLen || consectiveLen >= 32)
                     break;
-                if(qual[cur + consectiveLen] == q)
+                if(qual[cur + consectiveLen] == q) 
                     consectiveLen++;
                 else
                     break;
             }
+            // mask that this qual is normal, and is being processed
+            if(qualMask)
+                memset(qualMask + cur, true, sizeof(bool)*consectiveLen);
             // dec by another 1 to be encoded
             uint8 data = consectiveLen - 1;
             encoded[bufLen] =  data | 0xC0; //1100 0000
@@ -711,6 +717,9 @@ uint32 RfqCodec::encodeQualByCol(char* seq, uint8* qual, char* seqEncoded, char*
     uint8* qualOut = (uint8*)qualEncoded;
     uint32 qualBufLen = 0;
 
+    bool* qualMask = new bool[quaLen];
+    memset(qualMask, 0, sizeof(bool)*quaLen);
+
     //qualOut[0] = qualBins;
     //qualBufLen++;
 
@@ -726,7 +735,7 @@ uint32 RfqCodec::encodeQualByCol(char* seq, uint8* qual, char* seqEncoded, char*
     char mq = mHeader->majorQual();
 
     for(int i=0; i<qualBins; i++) {
-        singleQualLens[i] = encodeSingleQualByCol(qual, qualBuf[i], qualOut+qualBufLen, quaLen);
+        singleQualLens[i] = encodeSingleQualByCol(qual, qualBuf[i], qualOut+qualBufLen, quaLen, qualMask);
         qualBufLen += singleQualLens[i];
     }
 
@@ -738,8 +747,20 @@ uint32 RfqCodec::encodeQualByCol(char* seq, uint8* qual, char* seqEncoded, char*
     }
     memcpy(singleQualLenBuf, singleQualLens, sizeof(uint32)*qualBins);
 
+    for(uint32 i=0; i<quaLen; i++) {
+        // this qual is not normal, and need special handling
+        if(qualMask[i] == false && qual[i] != mq) {
+            qualOut[qualBufLen] = qual[i];
+            qualBufLen++;
+            uint32 lePos = adaptToLittleEndian(i);
+            memcpy(qualOut + qualBufLen, &lePos, sizeof(uint32));
+            qualBufLen += sizeof(uint32);
+        }
+    }
+
     delete qualBuf;
     delete singleQualLens;
+    delete qualMask;
     return qualBufLen;
 }
 
@@ -1025,6 +1046,17 @@ void RfqCodec::decodeQualByCol(RfqChunk* chunk, string& seq, string& qual, uint3
     for(int i=0; i<qualBins; i++) {
         decodeSingleQualByCol(chunk->mQualBuf + consumed, singleQualLens[i], qualBuf[i], seq, qual);
         consumed += singleQualLens[i];
+    }
+
+    while(consumed < chunk->mQualBufSize) {
+        char q = chunk->mQualBuf[consumed];
+        consumed++;
+        uint32 pos=0;
+        memcpy(&pos, chunk->mQualBuf + consumed, sizeof(uint32));
+        consumed+=sizeof(uint32);
+        //pos = adaptFromLittleEndian(pos);
+        if(pos < qual.length())
+            qual[pos] = q;
     }
 
     delete qualBuf;
