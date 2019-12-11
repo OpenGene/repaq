@@ -36,7 +36,8 @@ int main(int argc, char* argv[]){
     cmd.add("interleaved_in", 0, "indicate that <in1> is an interleaved paired-end FASTQ which contains both read1 and read2. Disabled by defaut.");
     cmd.add("compare", 'p', "compare the files read by read to check the compression consistency. <rfq_to_compare> should be specified in this mode.");
     cmd.add<string>("rfq_to_compare", 'r', "the RFQ file to be compared with the input. This option is only used in compare mode.", false, "");
-    cmd.add<string>("json_compare_result", 'j', "the file to store the comparison result. This is optional since the result is also printed on STDOUT.", false, "");
+    cmd.add<string>("json_compare_result", 'j', "the file to store the comparison result. This is optional since the result is also printed on STDOUT.", false, "");// threading
+    cmd.add<int>("thread", 't', "thread number for xz compression. No effect when the output is not a .xz file. Higher thread num means higher speed and lower compression ratio. 1~16, default 1.", false, 1);
 
     cmd.parse_check(argc, argv);
 
@@ -60,6 +61,8 @@ int main(int argc, char* argv[]){
     opt.inputFromSTDIN = cmd.exist("stdin");
     opt.outputToSTDOUT = cmd.exist("stdout");
     opt.interleavedInput = cmd.exist("interleaved_in");
+    int threadNum = cmd.get<int>("thread");
+    threadNum = max(1, min(16, threadNum));
 
     int modeNum = 0;
     if(cmd.exist("compress"))
@@ -116,7 +119,7 @@ int main(int argc, char* argv[]){
         replaceAll(command, opt.out1, "");
         replaceAll(command, "-o ", "");
         replaceAll(command, "--out1=", "");
-        command = command + " --stdout | xz -z -c -9 > " + opt.out1;
+        command = command + " --stdout | xz -z -c -9 -T" + to_string(threadNum) + " > " + opt.out1;
         int ret = system(command.c_str());
         if(ret != 0) {
             error_exit("failed to call xz, please confirm that xz is installed in your system");
