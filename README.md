@@ -112,5 +112,8 @@ options:
   -r, --rfq_to_compare         the RFQ file to be compared with the input. This option is only used in compare mode. (string [=])
   -j, --json_compare_result    the file to store the comparison result. This is optional since the result is also printed on STDOUT. (string [=])
 
+# other options
+  -t, --thread                 thread number for xz compression. No effect when the output is not a .xz file. Higher thread num means higher speed and lower compression ratio. 1~16, default 1. (int [=1])
+
   -?, --help                   print this message
 ```
