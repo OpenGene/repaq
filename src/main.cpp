@@ -112,11 +112,14 @@ int main(int argc, char* argv[]){
     }
     command = ss.str();
 
-    if(ends_with(opt.out1, ".xz") || ends_with(opt.in1, ".xz") || ends_with(opt.rfqCompare, ".xz")) {
+    if(ends_with(opt.in1, ".xz") || ends_with(opt.rfqCompare, ".xz")) {
         if(opt.inputFromSTDIN)
-            error_exit("STDIN cannot be read in xz mode");
+            error_exit("STDIN cannot be read when the input is a .xz file");
+    }
+
+    if(ends_with(opt.out1, ".xz") ) {
         if(opt.outputToSTDOUT)
-            error_exit("STDOUT cannot be written in xz mode");
+            error_exit("STDOUT cannot be written when the output is a .xz file");
     }
 
     // deal with xz

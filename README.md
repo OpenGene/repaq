@@ -74,10 +74,10 @@ Tips:
 # STDIN and STDOUT
 repaq can read the input from STDIN, and write the output to STDOUT.
 * specify `--stdin` if you want to read the STDIN for compression or decompression.
-* specify `--stdout` if you want to output to the STDOUT for compression or decompression.
-* `.rfq.xz` cannot work with STDIN or STDOUT. So, please compress/decompress `.rfq` with STDIN/STDOUT. 
+* specify `--stdout` if you want to output to the STDOUT for compression or decompression
 * in decompression mode, if `--stdout` is specified, the output will be interleaved PE stream.
 * if the STDIN is an interleaved paired-end stream, specify `--interleaved_in` to indicate that.
+* be noted that STDIN cannot be read when the input is a .xz file, and STDOUT cannot be written when the output is a .xz file
 
 Here gives you an example of compressing the interleaved PE output from fastp by directly using pipes:
 ```shell
