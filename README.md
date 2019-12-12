@@ -81,7 +81,7 @@ repaq can read the input from STDIN, and write the output to STDOUT.
 
 Here gives you an example of compressing the interleaved PE output from fastp by directly using pipes:
 ```shell
-fastp -i R1.fq -I R2.fq --stdout | repaq -c --interleaved_in --stdin -o out.rfq
+fastp -i R1.fq -I R2.fq --stdout | repaq -c --interleaved_in --stdin -o out.rfq.xz
 ```
 
 # FASTQ Format compatibility  
