@@ -38,9 +38,9 @@ int main(int argc, char* argv[]){
     cmd.add<string>("rfq_to_compare", 'r', "the RFQ file to be compared with the input. This option is only used in compare mode.", false, "");
     cmd.add<string>("json_compare_result", 'j', "the file to store the comparison result. This is optional since the result is also printed on STDOUT.", false, "");
     // threading
-    cmd.add<int>("thread", 't', "thread number for xz compression when output is a .xz file. Higher thread num means higher speed and lower compression ratio (1~16), default 1.", false, 1);
+    cmd.add<int>("thread", 't', "thread number for xz compression. Higher thread num means higher speed and lower compression ratio (1~16), default 1.", false, 1);
     // compression level
-    cmd.add<int>("compression", 'z', "compression level when output is a .xz file. Higher level means high compression ratio, but uses more RAM (1~9), default 4.", false, 4);
+    cmd.add<int>("compression", 'z', "compression level. Higher level means higher compression ratio, and more RAM usage (1~9), default 4.", false, 4);
 
     cmd.parse_check(argc, argv);
 
