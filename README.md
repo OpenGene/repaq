@@ -71,7 +71,7 @@ Tips:
 * if you want higher speed and are not concern with compression ratio, replace `xxx.rfq.xz` with `xxx.rfq`, then repaq will compress or decompress `.rfq` format.
 
 # verify the compressed file
-repaq offers an `compare` mode to check the consistency of the original FASTQ file(s) and the compressed .rfq or .rfq.xz file. 
+repaq offers a `compare` mode to check the consistency of the original FASTQ file(s) and the compressed .rfq or .rfq.xz file. 
 * set `--compare` to enable the `compare` mode
 * specify the .rfq or .rfq.xz file by `-r` option
 * specify the FASTQ files by `-i` and `-I` options.
@@ -79,10 +79,10 @@ repaq offers an `compare` mode to check the consistency of the original FASTQ fi
 Examples:
 ```shell
 # for single-end data
-./repaq --compare -i original.R1.fq  -r compressed.rfq.xz
+repaq --compare -i original.R1.fq  -r compressed.rfq.xz
 
 # for paired-end data
-./repaq --compare -i original.R1.fq.gz -I original.R2.fq.gz  -r compressed.rfq.xz
+repaq --compare -i original.R1.fq.gz -I original.R2.fq.gz  -r compressed.rfq.xz
 ```
 Without any expection, you will get an output of a JSON like:
 ```json
