@@ -70,6 +70,32 @@ Tips:
 * for paired-end data. the .rfq file created in paired-end mode is usually much smaller than the sum of the .rfq files created in single-end mode for R1 and R2 respectively. To obtain high compression rate, please always use PE mode for PE data.
 * if you want higher speed and are not concern with compression ratio, replace `xxx.rfq.xz` with `xxx.rfq`, then repaq will compress or decompress `.rfq` format.
 
+# verify the compressed file
+repaq offers an `compare` mode to check the consistency of the original FASTQ file(s) and the compressed .rfq or .rfq.xz file. 
+* set `--compare` to enable the `compare` mode
+* specify the .rfq or .rfq.xz file by `-r` option
+* specify the FASTQ files by `-i` and `-I` options.
+
+Examples:
+```shell
+# for single-end data
+./repaq --compare -i original.R1.fq  -r compressed.rfq.xz
+
+# for paired-end data
+./repaq --compare -i original.R1.fq.gz -I original.R2.fq.gz  -r compressed.rfq.xz
+```
+Without any expection, you will get an output of a JSON like:
+```json
+{
+	"result":"passed",
+	"msg":"",
+	"fastq_reads":50000,
+	"rfq_reads":50000,
+	"fastq_bases":7419082,
+	"rfq_bases":7419082
+}
+```
+The `result` will be "failed" if the compressed file is not consistent with the original FASTQ files.
 
 # STDIN and STDOUT
 repaq can read the input from STDIN, and write the output to STDOUT.
