@@ -261,7 +261,10 @@ uint8* RfqHeader::qualBuf() {
 }
 
 uint8 RfqHeader::normalQualBins() {
-    return mQualBins - 1;
+    if(majorQual() == mNBaseQual)
+        return mQualBins;
+    else
+        return mQualBins - 1;
 }
 
 uint8* RfqHeader::normalQualBuf() {
@@ -269,7 +272,7 @@ uint8* RfqHeader::normalQualBuf() {
     uint8* buf = new uint8[bins];
     int count = 0;
     for(int i=0; i<mQualBins; i++) {
-        if(mQualBuf[i] != majorQual()) {
+        if(mQualBuf[i] != majorQual() || mQualBuf[i]==mNBaseQual) {
             buf[count] = mQualBuf[i];
             count++;
             if(count > bins)
