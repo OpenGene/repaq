@@ -125,8 +125,8 @@ int main(int argc, char* argv[]){
     // deal with xz
     if(opt.mode == REPAQ_COMPRESS && ends_with(opt.out1, ".xz")) {
         replaceAll(command, opt.out1, "");
-        replaceAll(command, "-o ", "");
-        replaceAll(command, "--out1=", "");
+        replaceAll(command, " -o ", " ");
+        replaceAll(command, " --out1=", "");
         command = command + " --stdout | xz -z -c";
         if(threadNum > 1)
             command += " -T" + to_string(threadNum);
@@ -146,9 +146,9 @@ int main(int argc, char* argv[]){
             error_exit("failed to call xz, please confirm that xz is installed in your system");
         }
     } else if(opt.mode == REPAQ_DECOMPRESS && ends_with(opt.in1, ".xz")) {
-        replaceAll(command, opt.in1, "");
-        replaceAll(command, "-i", "");
-        replaceAll(command, "--in1=", "");
+        replaceAll(command, opt.in1, " ");
+        replaceAll(command, " -i ", " ");
+        replaceAll(command, " --in1=", "");
         command = "xz -d -c " + opt.in1 + "| " + command + " --stdin " ;
         int ret = system(command.c_str());
         if(ret != 0) {
@@ -156,8 +156,8 @@ int main(int argc, char* argv[]){
         }
     }  else if(opt.mode == REPAQ_COMPARE && ends_with(opt.rfqCompare, ".xz")) {
         replaceAll(command, opt.rfqCompare, "");
-        replaceAll(command, "-r", "");
-        replaceAll(command, "--rfq_to_compare=", "");
+        replaceAll(command, " -r ", " ");
+        replaceAll(command, " --rfq_to_compare=", "");
         command = "xz -d -c " + opt.rfqCompare + "| " + command + " --stdin " ;
         int ret = system(command.c_str());
         if(ret != 0) {
