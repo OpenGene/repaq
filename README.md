@@ -70,6 +70,10 @@ Tips:
 * for paired-end data. the .rfq file created in paired-end mode is usually much smaller than the sum of the .rfq files created in single-end mode for R1 and R2 respectively. To obtain high compression rate, please always use PE mode for PE data.
 * if you want higher speed and are not concern with compression ratio, replace `xxx.rfq.xz` with `xxx.rfq`, then repaq will compress or decompress `.rfq` format.
 
+# system requirements
+* Memory: 16G RAM
+* CPU: 4 cores
+
 # verify the compressed file
 repaq offers a `compare` mode to check the consistency of the original FASTQ file(s) and the compressed .rfq or .rfq.xz file. 
 * set `--compare` to enable the `compare` mode
