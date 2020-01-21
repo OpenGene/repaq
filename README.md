@@ -31,7 +31,6 @@ Typically with one single CPU core, it takes less than 1 minute to convert `nova
 [![install with conda](
 https://anaconda.org/bioconda/repaq/badges/version.svg)](https://anaconda.org/bioconda/repaq)
 ```shell
-# note: the fastp version in bioconda may be not the latest
 conda install -c bioconda repaq
 ```
 ## download binary 
