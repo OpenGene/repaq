@@ -1,3 +1,5 @@
+[![install with conda](
+https://anaconda.org/bioconda/repaq/badges/version.svg)](https://anaconda.org/bioconda/repaq)
 # repaq
 A tool to compress FASTQ files with ultra-high compression ratio and high speed. `repaq` supports compressing the FASTQ to `.rfq` or `.rfq.xz` formats. Compressing to `.rfq` is ultra fast, while compressing to `.rfq.xz` provides very high compression ratio. 
 
@@ -25,6 +27,13 @@ See? The size of final `nova.rfq.xz` is only 3.39% of the original FASTQ files! 
 Typically with one single CPU core, it takes less than 1 minute to convert `nova.R1.fq + nova.R2.fq` to `nova.rfq`, and takes less than 5 minutes to compress the `nova.rfq` to `nova.rfq.xz` by xz.
 
 # get repaq
+## install with Bioconda
+[![install with conda](
+https://anaconda.org/bioconda/repaq/badges/version.svg)](https://anaconda.org/bioconda/repaq)
+```shell
+# note: the fastp version in bioconda may be not the latest
+conda install -c bioconda repaq
+```
 ## download binary 
 This binary is only for Linux systems: http://opengene.org/repaq/repaq
 ```shell
