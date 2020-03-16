@@ -88,7 +88,7 @@ void RfqChunk::readName2LenBuf(ifstream& ifs) {
     for(int i=0; i<mName2LenBufSize; i++) {
         mName2BufSize += mName2LenBuf[i];
     }
-    if( (mFlags & BIT_NAME1_LEN_SAME) &&  (mFlags & BIT_NAME2_SAME)==false)
+    if( (mFlags & BIT_NAME2_LEN_SAME) &&  (mFlags & BIT_NAME2_SAME)==false)
         mName2BufSize *= mReads;
 }
 
