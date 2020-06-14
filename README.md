@@ -156,3 +156,10 @@ options:
 
   -?, --help                   print this message
 ```
+
+# external dependency
+`repaq` makes a system call in order to run the xz compression tool available on GNU/Linux systems. If xz isn't installed, `repaq` will fail with the message: 
+
+```
+failed to call xz, please confirm that xz is installed in your system
+```
