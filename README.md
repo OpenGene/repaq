@@ -11,7 +11,7 @@ For paired-end FASTQ files, `repaq` compresses them into one single file to prov
 
 This tool also supports non-Illumina format FASTQ (i.e. the BGI-SEQ format), but the compression ratio is not as good Illumina format FASTQ.
 
-***WARNING: be careful about using repaq for production before v1.0 is released, since its spec v1.0 has not been frozen.***
+*Citation: Chen S, Chen Y, Wang Z, Qin W, Zhang J, Nand H, Zhang J, Li J, Zhang X, Liang X and Xu M (2023) Efficient sequencing data compression and FPGA acceleration based on a two-step framework. Front. Genet. 14:1260531. doi: 10.3389/fgene.2023.1260531*   
 
 # take a look at the compression ratio
 Here we demonstrate the compression ratio of two paired-end NovaSeq data. You can download these files and test locally.
