@@ -163,3 +163,6 @@ options:
 ```
 failed to call xz, please confirm that xz is installed in your system
 ```
+# citation
+Shifu Chen, Yaru Chen, Zhouyang Wang, Wenjian Qin, Jing Zhang, Heera Nand, Jishuai Zhang, Jun Li, Xiaoni Zhang, Xiaoming Liang, Mingyan Xu. Efficient sequencing data compression and FPGA acceleration based on a two-step framework. Frontiers in Genetics, 2023, https://doi.org/10.3389/fgene.2023.1260531
+
