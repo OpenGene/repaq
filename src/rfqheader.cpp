@@ -16,7 +16,7 @@ RfqHeader::RfqHeader(){
     mOverlapShift = -24;
 }
 
-void RfqHeader::read(ifstream& ifs) {
+void RfqHeader::read(istream& ifs) {
     ifs.read(mRepaqFlag, 3);
     ifs.read(mRepaqVersion, 5);
     ifs.read(&mAlgorithmVersion, 1);
@@ -42,7 +42,46 @@ void RfqHeader::read(ifstream& ifs) {
     }
 }
 
-void RfqHeader::write(ofstream& ofs) {
+bool RfqHeader::identicalWith(RfqHeader* other) {
+    for(int i=0; i<3; i++) {
+        if(mRepaqFlag[i] != other->mRepaqFlag[i])
+            return false;
+    }
+    for(int i=0; i<5; i++) {
+        if(mRepaqVersion[i] != other->mRepaqVersion[i])
+            return false;
+    }
+    if(mAlgorithmVersion != other->mAlgorithmVersion) return false;
+    if(mReadLengthBytes != other->mReadLengthBytes) return false;
+    if(mFlags != other->mFlags) return false;
+    if(mOverlapShift != other->mOverlapShift) return false;
+    if(mSupportInterleaved != other->mSupportInterleaved) return false;
+    if(mName2DiffPos != other->mName2DiffPos) return false;
+    if(mName2DiffChar != other->mName2DiffChar) return false;
+
+    if(mQualBins != other->mQualBins) return false;
+    for(int i=0; i<mQualBins; i++) {
+        if(mQualBuf[i] != other->mQualBuf[i])
+            return false;
+    }
+
+    for(int i=0; i<256; i++) {
+        if(mQual2BitTable[i] != other->mQual2BitTable[i])
+            return false;
+    }
+
+    for(int i=0; i<256; i++) {
+        if(mBit2QualTable[i] != other->mBit2QualTable[i])
+            return false;
+    }
+
+    if(mNormalQualNumBits != other->mNormalQualNumBits) return false;
+    if(mNBaseQual != other->mNBaseQual) return false;
+
+    return true;
+}
+
+void RfqHeader::write(ostream& ofs) {
     ofs.write(mRepaqFlag, 3);
     ofs.write(mRepaqVersion, 5);
     ofs.write(&mAlgorithmVersion, 1);

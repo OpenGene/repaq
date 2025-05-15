@@ -3,6 +3,7 @@
 #include "util.h"
 #include "writer.h"
 #include <stdio.h>
+#include <sstream>
 
 Repaq::Repaq(Options* opt){
     mOptions = opt;
@@ -433,6 +434,11 @@ void Repaq::compress(){
     ofstream out;
     out.open(mOptions->out1, ios::out | ios::binary);
 
+    // for double check
+    RfqCodec codec4check;
+    ostringstream headerStream;
+    RfqHeader* header4check = new RfqHeader();
+
     vector<Read*> reads;
     RfqHeader* header = NULL;
     uint32 totalBses = 0;
@@ -446,7 +452,16 @@ void Repaq::compress(){
         if(totalBses >= mOptions->chunkSize) {
             if(header == NULL) {
                 header = codec.makeHeader(reads);
-                header->write(out);
+                header->write(headerStream);
+                out<<headerStream.str();
+                // for double check
+                istringstream iss;
+                iss.str(headerStream.str());
+                header4check->read(iss);
+                codec4check.setHeader(header4check);
+                if(!header->identicalWith(header4check)) {
+                    error_exit("encoding error in header, the output will be wrong, quit now!");
+                }
             }
             if(header == NULL)
                 error_exit("failed to encode, please confirm the input FASTQ file is valid and not empty");

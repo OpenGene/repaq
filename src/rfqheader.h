@@ -7,7 +7,6 @@
 #include <vector>
 #include "common.h"
 #include <iostream>
-#include <fstream>
 #include "read.h"
 
 using namespace std;
@@ -45,8 +44,8 @@ using namespace std;
 class RfqHeader{
 public:
     RfqHeader();
-    void read(ifstream& ifs);
-    void write(ofstream& ofs);
+    void read(istream& ifs);
+    void write(ostream& ofs);
     bool hasLane();
     bool hasTile();
     bool hasX();
@@ -70,6 +69,8 @@ public:
     uint8* qualBuf();
     uint8 normalQualBins();
     uint8* normalQualBuf();
+
+    bool identicalWith(RfqHeader* other);
 
 private:
     void makeQualBitTable();
