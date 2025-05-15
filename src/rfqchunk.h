@@ -7,7 +7,6 @@
 #include <vector>
 #include "common.h"
 #include <iostream>
-#include <fstream>
 #include "rfqheader.h"
 
 using namespace std;
@@ -54,17 +53,17 @@ class RfqChunk{
 public:
     RfqChunk(RfqHeader* header);
     ~RfqChunk();
-    void read(ifstream& ifs);
-    void write(ofstream& ofs);
+    void read(istream& ifs);
+    void write(ostream& ofs);
     void calcTotalBufSize();
 
 private:
-    void readReadLenBuf(ifstream& ifs);
-    void readName1LenBuf(ifstream& ifs);
-    void readName2LenBuf(ifstream& ifs);
-    void readStrandLenBuf(ifstream& ifs);
-    void readLaneBuf(ifstream& ifs);
-    void readTileBuf(ifstream& ifs);
+    void readReadLenBuf(istream& ifs);
+    void readName1LenBuf(istream& ifs);
+    void readName2LenBuf(istream& ifs);
+    void readStrandLenBuf(istream& ifs);
+    void readLaneBuf(istream& ifs);
+    void readTileBuf(istream& ifs);
 
 public:
     // the entire buffer size of this chunk

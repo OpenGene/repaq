@@ -38,7 +38,7 @@ RfqChunk::~RfqChunk(){
         delete[] mNPosBuf;
 }
 
-void RfqChunk::readReadLenBuf(ifstream& ifs) {
+void RfqChunk::readReadLenBuf(istream& ifs) {
     // read length
     int readLenCount = 1;
     if((mFlags & BIT_READ_LEN_SAME) == false) {
@@ -60,7 +60,7 @@ void RfqChunk::readReadLenBuf(ifstream& ifs) {
     }
 }
 
-void RfqChunk::readName1LenBuf(ifstream& ifs) {
+void RfqChunk::readName1LenBuf(istream& ifs) {
     // name1 length
     mName1LenBufSize = 1;
     if((mFlags & BIT_NAME1_LEN_SAME) == false) {
@@ -76,7 +76,7 @@ void RfqChunk::readName1LenBuf(ifstream& ifs) {
         mName1BufSize *= mReads;
 }
 
-void RfqChunk::readName2LenBuf(ifstream& ifs) {
+void RfqChunk::readName2LenBuf(istream& ifs) {
     // name2 length
     mName2LenBufSize = 1;
     if((mFlags & BIT_NAME2_LEN_SAME) == false) {
@@ -92,7 +92,7 @@ void RfqChunk::readName2LenBuf(ifstream& ifs) {
         mName2BufSize *= mReads;
 }
 
-void RfqChunk::readStrandLenBuf(ifstream& ifs) {
+void RfqChunk::readStrandLenBuf(istream& ifs) {
     // strand length
     mStrandLenBufSize = 1;
     if((mFlags & BIT_STRAND_LEN_SAME) == false) {
@@ -108,7 +108,7 @@ void RfqChunk::readStrandLenBuf(ifstream& ifs) {
         mStrandBufSize *= mReads;
 }
 
-void RfqChunk::readLaneBuf(ifstream& ifs) {
+void RfqChunk::readLaneBuf(istream& ifs) {
     int laneCount = 1;
     if((mFlags & BIT_LANE_SAME) == false) {
         if(mFlags & BIT_PE_INTERLEAVED)
@@ -120,7 +120,7 @@ void RfqChunk::readLaneBuf(ifstream& ifs) {
     ifs.read((char*)mLaneBuf, sizeof(uint8)*laneCount);
 }
 
-void RfqChunk::readTileBuf(ifstream& ifs) {
+void RfqChunk::readTileBuf(istream& ifs) {
     int tileCount = 1;
     if((mFlags & BIT_TILE_SAME) == false) {
         if(mFlags & BIT_PE_INTERLEAVED)
@@ -158,7 +158,7 @@ void RfqChunk::calcTotalBufSize() {
     }
 }
 
-void RfqChunk::read(ifstream& ifs) {
+void RfqChunk::read(istream& ifs) {
     //ifs.read((char*)&mSize, sizeof(uint32));
     mSize = readLittleEndian32(ifs);
     //ifs.read((char*)&mReads, sizeof(uint32));
@@ -227,7 +227,7 @@ void RfqChunk::read(ifstream& ifs) {
     }
 }
 
-void RfqChunk::write(ofstream& ofs) {
+void RfqChunk::write(ostream& ofs) {
     //ofs.write((const char*)&mSize, sizeof(uint32));
     writeLittleEndian(ofs, mSize);
     //ofs.write((const char*)&mReads, sizeof(uint32));
