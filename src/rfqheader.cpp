@@ -55,7 +55,7 @@ bool RfqHeader::identicalWith(RfqHeader* other) {
     if(mReadLengthBytes != other->mReadLengthBytes) return false;
     if(mFlags != other->mFlags) return false;
     if(mOverlapShift != other->mOverlapShift) return false;
-    if(mSupportInterleaved != other->mSupportInterleaved) return false;
+    //if(mSupportInterleaved != other->mSupportInterleaved) return false;
     if(mName2DiffPos != other->mName2DiffPos) return false;
     if(mName2DiffChar != other->mName2DiffChar) return false;
 

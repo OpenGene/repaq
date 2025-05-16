@@ -427,6 +427,98 @@ bool Repaq::hasLineBreakAtEnd(string& filename) {
     return c=='\n';
 }
 
+bool Repaq::doubleCheckAndOutput(RfqChunk* chunk, RfqCodec& codec4check, RfqHeader* header4check, vector<Read*>& reads, ostream& out) {
+    ostringstream oss;
+    istringstream iss;
+    chunk->write(oss);
+    out<<oss.str();
+    iss.str(oss.str());
+    RfqChunk* chunk4check = new RfqChunk(header4check);
+    chunk4check->read(iss);
+    vector<Read*> reads4check = codec4check.decodeChunk(chunk4check);
+    //todo: check reads identity
+    if(reads4check.size() != reads.size()) {
+        error_exit("encoding error in chunk, the output will be wrong, quit now!");
+        return false;
+    }
+    bool identical = true;
+    for(int i=0; i<reads4check.size(); i++) {
+        Read* rfq = reads4check[i];
+        Read* fq = reads[i];
+        if(rfq->mName != fq->mName) {
+            cerr << "integrity check failure \nexpected: " << endl << fq->mName << endl << "got:\n" << rfq->mName << endl;
+            identical = false;
+        }
+        else if(rfq->mSeq.mStr != fq->mSeq.mStr) {
+            cerr << "integrity check failure \nexpected: " << endl << fq->mSeq.mStr << endl << "got:\n" << rfq->mSeq.mStr << endl;
+            identical = false;
+        }
+        else if(rfq->mStrand != fq->mStrand) {
+            cerr << "integrity check failure \nexpected: " << endl << fq->mStrand << endl << "got:\n" << rfq->mStrand << endl;
+            identical = false;
+        }
+        else if(rfq->mQuality != fq->mQuality) {
+            cerr << "integrity check failure \nexpected: " << endl << fq->mQuality << endl << "got:\n" << rfq->mQuality << endl;
+            identical = false;
+        }
+    }
+    delete chunk4check;
+    for(int r=0; r<reads4check.size(); r++)
+        delete reads4check[r];
+    reads4check.clear();
+    return identical;
+}
+
+bool Repaq::doubleCheckAndOutput(RfqChunk* chunk, RfqCodec& codec4check, RfqHeader* header4check, vector<ReadPair*>& pairs, ostream& out) {
+    ostringstream oss;
+    istringstream iss;
+    chunk->write(oss);
+    out<<oss.str();
+    iss.str(oss.str());
+    RfqChunk* chunk4check = new RfqChunk(header4check);
+    chunk4check->read(iss);
+    vector<Read*> reads4check = codec4check.decodeChunk(chunk4check);
+    //todo: check reads identity
+    if(reads4check.size() != pairs.size()*2) {
+        error_exit("encoding error in chunk, the output will be wrong, quit now!");
+        return false;
+    }
+    bool identical = true;
+    for(int i=0; i<reads4check.size(); i++) {
+        Read* rfq = reads4check[i];
+
+        Read* fq;
+        if(i%2==0) {
+            fq = pairs[i/2]->mLeft;
+        } else {
+            fq = pairs[i/2]->mRight;
+            if(header4check->supportInterleaved())
+                rfq->changeToReverseComplement();
+        }
+        if(rfq->mName != fq->mName) {
+            cerr << "integrity check failure \nexpected: " << endl << fq->mName << endl << "got:\n" << rfq->mName << endl;
+            identical = false;
+        }
+        if(rfq->mSeq.mStr != fq->mSeq.mStr) {
+            cerr << "integrity check failure \nexpected: " << endl << fq->mSeq.mStr << endl << "got:\n" << rfq->mSeq.mStr << endl;
+            identical = false;
+        }
+        if(rfq->mStrand != fq->mStrand) {
+            cerr << "integrity check failure \nexpected: " << endl << fq->mStrand << endl << "got:\n" << rfq->mStrand << endl;
+            identical = false;
+        }
+        if(rfq->mQuality != fq->mQuality) {
+            cerr << "integrity check failure \nexpected: " << endl << fq->mQuality << endl << "got:\n" << rfq->mQuality << endl;
+            identical = false;
+        }
+    }
+    delete chunk4check;
+    for(int r=0; r<reads4check.size(); r++)
+        delete reads4check[r];
+    reads4check.clear();
+    return identical;
+}
+
 void Repaq::compress(){
     RfqCodec codec;
     FastqReader reader(mOptions->in1);
@@ -436,7 +528,7 @@ void Repaq::compress(){
 
     // for double check
     RfqCodec codec4check;
-    ostringstream headerStream;
+    ostringstream ossHeader;
     RfqHeader* header4check = new RfqHeader();
 
     vector<Read*> reads;
@@ -452,12 +544,12 @@ void Repaq::compress(){
         if(totalBses >= mOptions->chunkSize) {
             if(header == NULL) {
                 header = codec.makeHeader(reads);
-                header->write(headerStream);
-                out<<headerStream.str();
+                header->write(ossHeader);
+                out<<ossHeader.str();
                 // for double check
-                istringstream iss;
-                iss.str(headerStream.str());
-                header4check->read(iss);
+                istringstream issHeader;
+                issHeader.str(ossHeader.str());
+                header4check->read(issHeader);
                 codec4check.setHeader(header4check);
                 if(!header->identicalWith(header4check)) {
                     error_exit("encoding error in header, the output will be wrong, quit now!");
@@ -469,7 +561,14 @@ void Repaq::compress(){
             if(chunk) {
                 if(reader.hasNoLineBreakAtEnd())
                     chunk->mFlags |= BIT_HAS_NO_LINE_BREAK_AT_END;
-                chunk->write(out);
+
+                // for double check
+                if(mOptions->doubleCheck) {
+                    doubleCheckAndOutput(chunk, codec4check, header4check, reads, out);
+                } else {
+                    chunk->write(out);
+                }
+
                 delete chunk;
             }
             for(int r=0; r<reads.size(); r++)
@@ -481,7 +580,16 @@ void Repaq::compress(){
     if(reads.size() > 0) {
         if(header == NULL) {
             header = codec.makeHeader(reads);
-            header->write(out);
+            header->write(ossHeader);
+            out<<ossHeader.str();
+            // for double check
+            istringstream issHeader;
+            issHeader.str(ossHeader.str());
+            header4check->read(issHeader);
+            codec4check.setHeader(header4check);
+            if(!header->identicalWith(header4check)) {
+                error_exit("encoding error in header, the output will be wrong, quit now!");
+            }
         }
         if(header == NULL)
             error_exit("failed to encode, please confirm the input FASTQ file is valid and not empty");
@@ -489,7 +597,14 @@ void Repaq::compress(){
         if(chunk) {
             if(reader.hasNoLineBreakAtEnd())
                 chunk->mFlags |= BIT_HAS_NO_LINE_BREAK_AT_END;
-            chunk->write(out);
+
+            // for double check
+            if(mOptions->doubleCheck) {
+                doubleCheckAndOutput(chunk, codec4check, header4check, reads, out);
+            } else {
+                chunk->write(out);
+            }
+
             delete chunk;
         }
         for(int r=0; r<reads.size(); r++)
@@ -503,6 +618,12 @@ void Repaq::compress(){
         delete header;
         header = NULL;
     }
+
+    // for double check
+    if(header4check) {
+        delete header4check;
+        header4check = NULL;
+    }
 }
 
 void Repaq::compressPE(){
@@ -511,6 +632,11 @@ void Repaq::compressPE(){
 
     ofstream out;
     out.open(mOptions->out1, ios::out | ios::binary);
+
+    // for double check
+    RfqCodec codec4check;
+    ostringstream ossHeader;
+    RfqHeader* header4check = new RfqHeader();
 
     vector<ReadPair*> reads;
     RfqHeader* header = NULL;
@@ -525,7 +651,18 @@ void Repaq::compressPE(){
         if(totalBses >= mOptions->chunkSize) {
             if(header == NULL) {
                 header = codec.makeHeader(reads);
-                header->write(out);
+                header->write(ossHeader);
+                out<<ossHeader.str();
+                // for double check
+                istringstream issHeader;
+                issHeader.str(ossHeader.str());
+                header4check->read(issHeader);
+                // copy the mSupportInterleaved flag which is not stored in file
+                header4check->mSupportInterleaved = header->mSupportInterleaved;
+                codec4check.setHeader(header4check);
+                if(!header->identicalWith(header4check)) {
+                    error_exit("encoding error in header, the output will be wrong, quit now!");
+                }
             }
             if(header == NULL)
                 error_exit("failed to encode, please confirm the input FASTQ file is valid and not empty");
@@ -541,7 +678,14 @@ void Repaq::compressPE(){
                     chunk->mFlags |= BIT_HAS_NO_LINE_BREAK_AT_END;
                 if(noLineBreakAtEndR2)
                     chunk->mFlags |= BIT_HAS_NO_LINE_BREAK_AT_END_R2;
-                chunk->write(out);
+                
+                // for double check
+                if(mOptions->doubleCheck) {
+                    doubleCheckAndOutput(chunk, codec4check, header4check, reads, out);
+                } else {
+                    chunk->write(out);
+                }
+
                 delete chunk;
             }
             for(int r=0; r<reads.size(); r++)
@@ -553,7 +697,18 @@ void Repaq::compressPE(){
     if(reads.size() > 0) {
         if(header == NULL) {
             header = codec.makeHeader(reads);
-            header->write(out);
+            header->write(ossHeader);
+            out<<ossHeader.str();
+            // for double check
+            istringstream issHeader;
+            issHeader.str(ossHeader.str());
+            header4check->read(issHeader);
+            // copy the mSupportInterleaved flag which is not stored in file
+            header4check->mSupportInterleaved = header->mSupportInterleaved;
+            codec4check.setHeader(header4check);
+            if(!header->identicalWith(header4check)) {
+                error_exit("encoding error in header, the output will be wrong, quit now!");
+            }
         }
         if(header == NULL)
             error_exit("failed to encode, please confirm the input FASTQ file is valid and not empty");
@@ -569,7 +724,14 @@ void Repaq::compressPE(){
                 chunk->mFlags |= BIT_HAS_NO_LINE_BREAK_AT_END;
             if(noLineBreakAtEndR2)
                 chunk->mFlags |= BIT_HAS_NO_LINE_BREAK_AT_END_R2;
-            chunk->write(out);
+
+            // for double check
+            if(mOptions->doubleCheck) {
+                doubleCheckAndOutput(chunk, codec4check, header4check, reads, out);
+            } else {
+                chunk->write(out);
+            }
+        
             delete chunk;
         }
         for(int r=0; r<reads.size(); r++)

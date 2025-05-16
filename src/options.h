@@ -37,6 +37,9 @@ public:
     int chunkSize;
     int mode;
 
+    // for double check
+    bool doubleCheck;
+
 };
 
 #endif

@@ -15,6 +15,7 @@ Options::Options(){
     inputFromSTDIN = false;
     outputToSTDOUT = false;
     interleavedInput = false;
+    doubleCheck = true;
 }
 
 bool Options::isFastqFile(string filename) {
