@@ -154,6 +154,10 @@ options:
   -t, --thread                 thread number for xz compression. Higher thread num means higher speed and lower compression ratio (1~16), default 1. (int [=1])
   -z, --compression            compression level. Higher level means higher compression ratio, and more RAM usage (1~9), default 4. (int [=4])
 
+# verify the output when compressing
+  -v, --verify                 verify the output stream to ensure compression is correct.
+  -f, --fast_verify            only verify part (10%) of the output stream to save time.
+
   -?, --help                   print this message
 ```
 
