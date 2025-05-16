@@ -427,7 +427,7 @@ bool Repaq::hasLineBreakAtEnd(string& filename) {
     return c=='\n';
 }
 
-bool Repaq::doubleCheckAndOutput(RfqChunk* chunk, RfqCodec& codec4check, RfqHeader* header4check, vector<Read*>& reads, ostream& out) {
+bool Repaq::completeCheckAndOutput(RfqChunk* chunk, RfqCodec& codec4check, RfqHeader* header4check, vector<Read*>& reads, ostream& out) {
     ostringstream oss;
     istringstream iss;
     chunk->write(oss);
@@ -469,7 +469,7 @@ bool Repaq::doubleCheckAndOutput(RfqChunk* chunk, RfqCodec& codec4check, RfqHead
     return identical;
 }
 
-bool Repaq::doubleCheckAndOutput(RfqChunk* chunk, RfqCodec& codec4check, RfqHeader* header4check, vector<ReadPair*>& pairs, ostream& out) {
+bool Repaq::completeCheckAndOutput(RfqChunk* chunk, RfqCodec& codec4check, RfqHeader* header4check, vector<ReadPair*>& pairs, ostream& out) {
     ostringstream oss;
     istringstream iss;
     chunk->write(oss);
@@ -530,6 +530,7 @@ void Repaq::compress(){
     RfqCodec codec4check;
     ostringstream ossHeader;
     RfqHeader* header4check = new RfqHeader();
+    int pass = 0;
 
     vector<Read*> reads;
     RfqHeader* header = NULL;
@@ -563,11 +564,12 @@ void Repaq::compress(){
                     chunk->mFlags |= BIT_HAS_NO_LINE_BREAK_AT_END;
 
                 // for double check
-                if(mOptions->doubleCheck) {
-                    doubleCheckAndOutput(chunk, codec4check, header4check, reads, out);
+                if(mOptions->completeCheck || (mOptions->fastCheck && pass%10 == 0)) {
+                    completeCheckAndOutput(chunk, codec4check, header4check, reads, out);
                 } else {
                     chunk->write(out);
                 }
+                pass++;
 
                 delete chunk;
             }
@@ -599,11 +601,12 @@ void Repaq::compress(){
                 chunk->mFlags |= BIT_HAS_NO_LINE_BREAK_AT_END;
 
             // for double check
-            if(mOptions->doubleCheck) {
-                doubleCheckAndOutput(chunk, codec4check, header4check, reads, out);
+            if(mOptions->completeCheck || (mOptions->fastCheck && pass%10 == 0)) {
+                completeCheckAndOutput(chunk, codec4check, header4check, reads, out);
             } else {
                 chunk->write(out);
             }
+            pass++;
 
             delete chunk;
         }
@@ -637,6 +640,7 @@ void Repaq::compressPE(){
     RfqCodec codec4check;
     ostringstream ossHeader;
     RfqHeader* header4check = new RfqHeader();
+    int pass = 0;
 
     vector<ReadPair*> reads;
     RfqHeader* header = NULL;
@@ -680,11 +684,12 @@ void Repaq::compressPE(){
                     chunk->mFlags |= BIT_HAS_NO_LINE_BREAK_AT_END_R2;
                 
                 // for double check
-                if(mOptions->doubleCheck) {
-                    doubleCheckAndOutput(chunk, codec4check, header4check, reads, out);
+                if(mOptions->completeCheck || (mOptions->fastCheck && pass%10 == 0)) {
+                    completeCheckAndOutput(chunk, codec4check, header4check, reads, out);
                 } else {
                     chunk->write(out);
                 }
+                pass++;
 
                 delete chunk;
             }
@@ -726,11 +731,12 @@ void Repaq::compressPE(){
                 chunk->mFlags |= BIT_HAS_NO_LINE_BREAK_AT_END_R2;
 
             // for double check
-            if(mOptions->doubleCheck) {
-                doubleCheckAndOutput(chunk, codec4check, header4check, reads, out);
+            if(mOptions->completeCheck || (mOptions->fastCheck && pass%10 == 0)) {
+                completeCheckAndOutput(chunk, codec4check, header4check, reads, out);
             } else {
                 chunk->write(out);
             }
+            pass++;
         
             delete chunk;
         }

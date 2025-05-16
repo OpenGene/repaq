@@ -38,7 +38,8 @@ public:
     int mode;
 
     // for double check
-    bool doubleCheck;
+    bool completeCheck;
+    bool fastCheck;
 
 };
 

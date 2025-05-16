@@ -35,6 +35,7 @@ int main(int argc, char* argv[]){
     cmd.add("stdout", 0, "write to STDOUT. When decompressing PE data, this option will result in interleaved FASTQ output for paired-end input. Disabled by defaut.");
     cmd.add("interleaved_in", 0, "indicate that <in1> is an interleaved paired-end FASTQ which contains both read1 and read2. Disabled by defaut.");
     cmd.add("verify", 'v', "verify the output stream to ensure compression is correct.");
+    cmd.add("fast_verify", 'f', "only verify part (10%) of the output stream to save time.");
     cmd.add("compare", 'p', "compare the files read by read to check the compression consistency. <rfq_to_compare> should be specified in this mode.");
     cmd.add<string>("rfq_to_compare", 'r', "the RFQ file to be compared with the input. This option is only used in compare mode.", false, "");
     cmd.add<string>("json_compare_result", 'j', "the file to store the comparison result. This is optional since the result is also printed on STDOUT.", false, "");
@@ -69,7 +70,8 @@ int main(int argc, char* argv[]){
     threadNum = max(1, min(16, threadNum));
     int compression = cmd.get<int>("compression");
     compression = max(1, min(9, compression));
-    opt.doubleCheck = cmd.exist("verify");
+    opt.completeCheck = cmd.exist("verify");
+    opt.fastCheck = cmd.exist("fast_verify");
 
     int modeNum = 0;
     if(cmd.exist("compress"))
