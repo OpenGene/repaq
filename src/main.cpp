@@ -22,6 +22,10 @@ int main(int argc, char* argv[]){
         tester.run();
         return 0;
     }
+    if (argc == 2 && strcmp(argv[1], "--version")==0){
+        cout << "repaq " << VERSION_NUM << endl;
+        return 0;
+    }
     cmdline::parser cmd;
     // input/output
     cmd.add<string>("in1", 'i', "input file name", false, "");
