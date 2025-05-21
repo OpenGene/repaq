@@ -852,6 +852,11 @@ void RfqCodec::decodeSeqQual(RfqChunk* chunk, string& seq, string& qual, uint32 
             break;
     }
 
+    // if N positions are encoded, we restore them use the same method as decoding single quality
+    if(mHeader->encodeNPos()) {
+        decodeSingleQualByCol(chunk->mNPosBuf, chunk->mNPosBufSize, 'N', seq, seq);
+    }
+
     if(encodeOverlap) {
         const char* srcBuf = seq.c_str();
         char* dstBuf = new char[len];
@@ -893,11 +898,6 @@ void RfqCodec::decodeSeqQual(RfqChunk* chunk, string& seq, string& qual, uint32 
         seq = string(dstBuf, len);
         delete dstBuf;
         dstBuf = NULL;
-    }
-
-    // if N positions are encoded, we restore them use the same method as decoding single quality
-    if(mHeader->encodeNPos()) {
-        decodeSingleQualByCol(chunk->mNPosBuf, chunk->mNPosBufSize, 'N', seq, seq);
     }
 
 
