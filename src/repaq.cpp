@@ -448,18 +448,22 @@ bool Repaq::completeCheckAndOutput(RfqChunk* chunk, RfqCodec& codec4check, RfqHe
         if(rfq->mName != fq->mName) {
             cerr << "integrity check failure \nexpected: " << endl << fq->mName << endl << "got:\n" << rfq->mName << endl;
             identical = false;
+            break;
         }
         else if(rfq->mSeq.mStr != fq->mSeq.mStr) {
             cerr << "integrity check failure \nexpected: " << endl << fq->mSeq.mStr << endl << "got:\n" << rfq->mSeq.mStr << endl;
             identical = false;
+            break;
         }
         else if(rfq->mStrand != fq->mStrand) {
             cerr << "integrity check failure \nexpected: " << endl << fq->mStrand << endl << "got:\n" << rfq->mStrand << endl;
             identical = false;
+            break;
         }
         else if(rfq->mQuality != fq->mQuality) {
             cerr << "integrity check failure \nexpected: " << endl << fq->mQuality << endl << "got:\n" << rfq->mQuality << endl;
             identical = false;
+            break;
         }
     }
     delete chunk4check;
@@ -498,18 +502,22 @@ bool Repaq::completeCheckAndOutput(RfqChunk* chunk, RfqCodec& codec4check, RfqHe
         if(rfq->mName != fq->mName) {
             cerr << "integrity check failure \nexpected: " << endl << fq->mName << endl << "got:\n" << rfq->mName << endl;
             identical = false;
+            break;
         }
         if(rfq->mSeq.mStr != fq->mSeq.mStr) {
             cerr << "integrity check failure \nexpected: " << endl << fq->mSeq.mStr << endl << "got:\n" << rfq->mSeq.mStr << endl;
             identical = false;
+            break;
         }
         if(rfq->mStrand != fq->mStrand) {
             cerr << "integrity check failure \nexpected: " << endl << fq->mStrand << endl << "got:\n" << rfq->mStrand << endl;
             identical = false;
+            break;
         }
         if(rfq->mQuality != fq->mQuality) {
             cerr << "integrity check failure \nexpected: " << endl << fq->mQuality << endl << "got:\n" << rfq->mQuality << endl;
             identical = false;
+            break;
         }
     }
     delete chunk4check;
