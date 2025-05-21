@@ -51,6 +51,8 @@ public:
     bool hasX();
     bool hasY();
     bool hasName2();
+    bool encodeNPos();
+    void setEncodeNPos();
 
     char qual2bit(char qual);
     char bit2qual(char qual);

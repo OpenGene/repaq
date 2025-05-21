@@ -419,7 +419,7 @@ RfqChunk* RfqCodec::encodeChunk(vector<Read*>& reads, bool isPE) {
     // if we need to encode N pos, we use the same method as we encode single quality
     uint8* nPosBuf = NULL;
     uint32 nPosBufSize = 0;
-    if(mHeader->mFlags & BIT_ENCODE_N_POS) {
+    if(mHeader->encodeNPos()) {
         nPosBuf = new uint8[seqCopied];
         memset(nPosBuf, 0, seqCopied);
         nPosBufSize = encodeSingleQualByCol((uint8*)seqBufOriginal, 'N', nPosBuf, seqCopied, NULL);
@@ -573,7 +573,7 @@ RfqChunk* RfqCodec::encodeChunk(vector<Read*>& reads, bool isPE) {
     if(encodeOverlap)
         chunk->mOverlapBuf = overlapBuf;
 
-    if(mHeader->mFlags & BIT_ENCODE_N_POS) {
+    if(mHeader->encodeNPos()) {
         chunk->mNPosBuf = new uint8[nPosBufSize];
         chunk->mNPosBufSize = nPosBufSize;
         memcpy(chunk->mNPosBuf, nPosBuf, nPosBufSize);
@@ -827,7 +827,6 @@ void RfqCodec::decodeSeqQual(RfqChunk* chunk, string& seq, string& qual, uint32 
     if(len == 0)
         return;
     bool encodeOverlap = (chunk->mFlags & BIT_PE_INTERLEAVED) && (mHeader->mFlags & BIT_ENCODE_PE_BY_OVERLAP);
-    char nBaseQual = mHeader->nBaseQual();
 
     uint32 decoded = 0;
     // decode sequence
@@ -897,7 +896,7 @@ void RfqCodec::decodeSeqQual(RfqChunk* chunk, string& seq, string& qual, uint32 
     }
 
     // if N positions are encoded, we restore them use the same method as decoding single quality
-    if(mHeader->mFlags & BIT_ENCODE_N_POS) {
+    if(mHeader->encodeNPos()) {
         decodeSingleQualByCol(chunk->mNPosBuf, chunk->mNPosBufSize, 'N', seq, seq);
     }
 
@@ -906,8 +905,6 @@ void RfqCodec::decodeSeqQual(RfqChunk* chunk, string& seq, string& qual, uint32 
     if(mHeader->mFlags & BIT_DONT_ENCODE_QUAL) {
         for(int i=0; i<chunk->mQualBufSize; i++) {
             qual[i] = chunk->mQualBuf[i];
-            if(qual[i] == nBaseQual)
-                seq[i] = 'N';
         }
         return;
     }
@@ -949,9 +946,6 @@ void RfqCodec::decodeQualByRunLenCoding(RfqChunk* chunk, string& seq, string& qu
                 qualVal = nBaseQual;
             for(int fill = decoded; fill < decoded + num && fill < len; fill++) {
                 qual[fill] = qualVal;
-                // write N in sequence
-                if(q == nBaseBit)
-                    seq[fill] = 'N';
             }
             decoded += num;
             if(decoded >= len)
@@ -963,7 +957,6 @@ void RfqCodec::decodeQualByRunLenCoding(RfqChunk* chunk, string& seq, string& qu
 void RfqCodec::decodeSingleQualByCol(uint8* buf, uint32 bufLen, uint8 q, string& seq, string& qual) {
     uint32 consumed = 0;
     int last=-1;
-    bool isNQual = q == mHeader->nBaseQual();
     uint8 byte0, byte1, byte2, byte3;
     int distance;
     while(consumed < bufLen) {
@@ -972,8 +965,6 @@ void RfqCodec::decodeSingleQualByCol(uint8* buf, uint32 bufLen, uint8 q, string&
         if( (byte0 & 0x80)==0 ) {
             distance = byte0 + 1;
             qual[last + distance] = q;
-            if(isNQual)
-                seq[last + distance] = 'N';
             consumed += 1;
             last += distance;
         }
@@ -984,8 +975,6 @@ void RfqCodec::decodeSingleQualByCol(uint8* buf, uint32 bufLen, uint8 q, string&
             distance = ((distance & 0x3F) << 8) | byte1;
             distance += 1;
             qual[last + distance] = q;
-            if(isNQual)
-                seq[last + distance] = 'N';
             consumed += 2;
             last += distance;
         }
@@ -995,10 +984,6 @@ void RfqCodec::decodeSingleQualByCol(uint8* buf, uint32 bufLen, uint8 q, string&
             consectiveLen += 1;
             for(int i=1; i<=consectiveLen; i++) {
                 qual[i+last] = q;
-            }
-            if(isNQual) {
-                for(int i=1; i<=consectiveLen; i++)
-                    seq[i+last] = 'N';
             }
             consumed += 1;
             last += consectiveLen;
@@ -1015,8 +1000,6 @@ void RfqCodec::decodeSingleQualByCol(uint8* buf, uint32 bufLen, uint8 q, string&
             distance = (distance<<8) | byte3;
             distance += 1;
             qual[last + distance] = q;
-            if(isNQual)
-                seq[last + distance] = 'N';
             consumed += 4;
             last += distance;
         }
@@ -1106,6 +1089,16 @@ vector<Read*> RfqCodec::decodeChunk(RfqChunk* chunk) {
     string allQual(seqLen, mHeader->majorQual());
 
     decodeSeqQual(chunk, allSeq, allQual, seqLen, readLenBuf);
+
+    if(!mHeader->encodeNPos()) {
+        char nBaseQual = mHeader->nBaseQual();
+        for (unsigned int i=0; i<seqLen; i++) {
+            if(allQual[i] == nBaseQual) {
+                allSeq[i] = 'N';
+            }
+        }
+    }
+
     int name1Len0 = chunk->mName1LenBuf[0];
     string name10(chunk->mName1Buf, name1Len0);
     int strandLen0 = chunk->mStrandLenBuf[0];

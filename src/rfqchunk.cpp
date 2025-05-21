@@ -146,7 +146,7 @@ void RfqChunk::calcTotalBufSize() {
     // overlap buf size;
     if( (mFlags & BIT_PE_INTERLEAVED) && (mHeader->mFlags & BIT_ENCODE_PE_BY_OVERLAP))
         mSize += mReads/2;
-    if(mHeader->mFlags & BIT_ENCODE_N_POS) {
+    if(mHeader->encodeNPos()) {
         mSize += sizeof(mNPosBufSize);
         mSize += mNPosBufSize;
     }
@@ -170,7 +170,7 @@ void RfqChunk::read(istream& ifs) {
     //ifs.read((char*)&mQualBufSize, sizeof(uint32));
     mQualBufSize = readLittleEndian32(ifs);
     // mNPosBufSize
-    if(mHeader->mFlags & BIT_ENCODE_N_POS)
+    if(mHeader->encodeNPos())
         mNPosBufSize = readLittleEndian32(ifs);
 
     readReadLenBuf(ifs);
@@ -221,7 +221,7 @@ void RfqChunk::read(istream& ifs) {
         ifs.read(mOverlapBuf, mReads/2);
     }
 
-    if(mHeader->mFlags & BIT_ENCODE_N_POS) {
+    if(mHeader->encodeNPos()) {
         mNPosBuf = new uint8[mNPosBufSize];
         ifs.read((char*)mNPosBuf, mNPosBufSize);
     }
@@ -238,7 +238,7 @@ void RfqChunk::write(ostream& ofs) {
     writeLittleEndian(ofs, mSeqBufSize);
     //ofs.write((const char*)&mQualBufSize, sizeof(uint32));
     writeLittleEndian(ofs, mQualBufSize);
-    if(mHeader->mFlags & BIT_ENCODE_N_POS)
+    if(mHeader->encodeNPos())
         writeLittleEndian(ofs, mNPosBufSize);
 
     ofs.write((const char*)mReadLenBuf, mReadLenBufSize);
@@ -306,7 +306,7 @@ void RfqChunk::write(ostream& ofs) {
         ofs.write(mOverlapBuf, mReads/2);
     }
 
-    if(mHeader->mFlags & BIT_ENCODE_N_POS) {
+    if(mHeader->encodeNPos()) {
         ofs.write((char*)mNPosBuf, mNPosBufSize);
     }
 }

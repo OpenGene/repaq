@@ -131,8 +131,7 @@ void RfqHeader::makeQualityTable(vector<Read*>& reads, bool hasLaneTileXY) {
     int table[128];
     memset(table, 0, sizeof(int)*128);
 
-    bool nBaseQualMade = false;
-    bool sharpIsNQual = true;
+    int nBaseQualCount = 0;
     for(int r=0; r<reads.size(); r++) {
         Read* read = reads[r];
         const char* seq = read->mSeq.mStr.c_str();
@@ -144,14 +143,14 @@ void RfqHeader::makeQualityTable(vector<Read*>& reads, bool hasLaneTileXY) {
             table[q]++;
             char base = seq[i];
             if(base == 'N') {
-                if(!nBaseQualMade) {
+                if(nBaseQualCount == 0) {
                     mNBaseQual = q;
-                    nBaseQualMade = true;
                 } else if(mNBaseQual != q) {
                     //error_exit("The quality score of N bases are different.");
-                    mFlags |= BIT_ENCODE_N_POS;
+                    setEncodeNPos();
                     mNBaseQual = -1;
                 }
+                nBaseQualCount++;
             }
             if(base != 'A' && base != 'T' && base != 'C' && base != 'G' && base != 'N' ) {
                 if(base == 'a' || base =='t' || base == 'c' || base == 't') {
@@ -165,24 +164,23 @@ void RfqHeader::makeQualityTable(vector<Read*>& reads, bool hasLaneTileXY) {
                     error_exit(errmsg);
                 }
             }
-            if(q=='#' && base!='N')
-                sharpIsNQual = false;
-            if(nBaseQualMade && q==mNBaseQual && base!='N'){
+            if(q==mNBaseQual && nBaseQualCount>0 &&  base!='N'){
                     //string errmsg("the quality " + string(1, q) + " should be with N base, but we get " + string(1, base));
                     //errmsg += "\nThe read is:\n" + read->mSeq.mStr + "\n" + read->mQuality;
                     //error_exit(errmsg);
                     // in this case, we have to encode N bases
-                    mFlags |= BIT_ENCODE_N_POS;
+                    setEncodeNPos();
                     mNBaseQual = -1;
                 }
 
         }
     }
 
-    // no N base found, and is not Illumina data
-    if(!nBaseQualMade) {
-        if(!sharpIsNQual || !hasLaneTileXY)
-            mNBaseQual = 0;
+    // TODO: we at least need to check the first 100 N bases to verify the N bases have same and unique qual score
+    // WARNING: we may introduce integrity problem here if the FASTQ format is weird (first chunk is different with other chunks)
+    if(nBaseQualCount < 100) {
+        setEncodeNPos();
+        mNBaseQual = -1;
     }
 
     mQualBins = 0;
@@ -236,6 +234,14 @@ void RfqHeader::makeQualityTable(vector<Read*>& reads, bool hasLaneTileXY) {
         mFlags |= BIT_ENCODE_QUAL_BY_COL;
 
     makeQualBitTable();
+}
+
+bool RfqHeader::encodeNPos() {
+    return mFlags & BIT_ENCODE_N_POS;
+}
+
+void RfqHeader::setEncodeNPos() {
+    mFlags |= BIT_ENCODE_N_POS;
 }
 
 char RfqHeader::qual2bit(char qual) {
