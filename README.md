@@ -134,25 +134,25 @@ repaq was initially designed for compressing Illumina data, but it also works wi
 # all options
 ```shell
 options:
-  -i, --in1                    input file name (string [=])
-  -o, --out1                   output file name (string [=])
-  -I, --in2                    read2 input file name when encoding paired-end FASTQ files (string [=])
-  -O, --out2                   read2 output file name when decoding to paired-end FASTQ files (string [=])
+  -i, --in1                    input file name
+  -o, --out1                   output file name
+  -I, --in2                    read2 input file name when encoding paired-end FASTQ files
+  -O, --out2                   read2 output file name when decoding to paired-end FASTQ files
   -c, --compress               compress input to output
   -d, --decompress             decompress input to output
-  -k, --chunk                  the chunk size (kilo bases) for encoding, default 1000=1000kb. (int [=1000])
+  -k, --chunk                  the chunk size (kilo bases) for encoding, default 1000=1000kb.
       --stdin                  input from STDIN. If the STDIN is interleaved paired-end FASTQ, please also add --interleaved_in.
       --stdout                 write to STDOUT. When decompressing PE data, this option will result in interleaved FASTQ output for paired-end input. Disabled by defaut.
       --interleaved_in         indicate that <in1> is an interleaved paired-end FASTQ which contains both read1 and read2. Disabled by defaut.
   
 # following options are used to check the consistency of the compressed data
   -p, --compare                compare the files read by read to check the compression consistency. <rfq_to_compare> should be specified in this mode.
-  -r, --rfq_to_compare         the RFQ file to be compared with the input. This option is only used in compare mode. (string [=])
-  -j, --json_compare_result    the file to store the comparison result. This is optional since the result is also printed on STDOUT. (string [=])
+  -r, --rfq_to_compare         the RFQ file to be compared with the input. This option is only used in compare mode.
+  -j, --json_compare_result    the file to store the comparison result. This is optional since the result is also printed on STDOUT.
 
 # options for .xz output
-  -t, --thread                 thread number for xz compression. Higher thread num means higher speed and lower compression ratio (1~16), default 1. (int [=1])
-  -z, --compression            compression level. Higher level means higher compression ratio, and more RAM usage (1~9), default 4. (int [=4])
+  -t, --thread                 thread number for xz compression (default 1). When compression level (-z) is >= 4, no threading will be used.
+  -z, --compression            compression level. Higher level means higher compression ratio, and more RAM usage (1~9), default 3.
 
 # verify the output when compressing
   -v, --verify                 verify the output stream to ensure compression is correct.
