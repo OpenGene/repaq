@@ -44,9 +44,9 @@ int main(int argc, char* argv[]){
     cmd.add<string>("rfq_to_compare", 'r', "the RFQ file to be compared with the input. This option is only used in compare mode.", false, "");
     cmd.add<string>("json_compare_result", 'j', "the file to store the comparison result. This is optional since the result is also printed on STDOUT.", false, "");
     // threading
-    cmd.add<int>("thread", 't', "thread number for xz compression. Higher thread num means higher speed and lower compression ratio (1~16), default 1.", false, 1);
+    cmd.add<int>("thread", 't', "thread number for xz compression (default 1). When compression level (-z) is >= 4, no threading will be used.", false, 1);
     // compression level
-    cmd.add<int>("compression", 'z', "compression level. Higher level means higher compression ratio, and more RAM usage (1~9), default 4.", false, 4);
+    cmd.add<int>("compression", 'z', "compression level. Higher level means higher compression ratio, and more RAM usage (1~9), default 3.", false, 3);
 
     cmd.parse_check(argc, argv);
 
@@ -148,6 +148,10 @@ int main(int argc, char* argv[]){
             command += " --lzma2=\"dict=" + to_string(dictSize) +  "\"";
         }
         command = command + " > " + opt.out1;
+
+        if(compression >=4 && threadNum>1) {
+            cerr << "WARNING: when repaq compression level is >= 4, only single thread will be used for xz. Your options: compression = " << compression << ", thread = " << threadNum << endl;
+        }
 
         int ret = system(command.c_str());
         if(ret != 0) {
